@@ -18,7 +18,7 @@ function drawPanel(s, x, y) {
   if (m.status) sx += chipC(sx, sy, STATUSN[m.status][0], STATUSN[m.status][1]);
   if (m.seeded !== null && m.seeded !== undefined) sx += chipC(sx, sy, '寄生', '#78c850');
   for (const k of ['atk', 'def', 'spa', 'spd', 'spe', 'acc', 'eva']) if (m.st && m.st[k]) sx += chipC(sx, sy, STATN[k] + (m.st[k] > 0 ? '+' : '') + m.st[k], m.st[k] > 0 ? '#ffb36b' : '#7ab8ff');
-  if (sx === x + 12) { ctx.font = `11px ${FONT}`; ctx.fillStyle = '#5f6a86'; ctx.fillText(`${m.nature}・${m.ability}`, x + 12, y + 71); }
+  if (sx === x + 12) { ctx.font = `11px ${FONT}`; ctx.fillStyle = '#5f6a86'; ctx.fillText(`${m.nature}・${m.ability}・移速 ${Math.round(moveSpeed(m))}`, x + 12, y + 71); }
 }
 function skillKeys() { return INPUT.scheme === 'lol' ? ['Q', 'W', 'E', 'R'] : ['1', '2', '3', '4']; }
 function drawSkillBar() {
@@ -39,6 +39,7 @@ function drawSkillBar() {
   }
   const xr = x0 + total + 14; const lol = INPUT.scheme === 'lol';
   const small = (yy, label, cd) => { ctx.fillStyle = 'rgba(14,20,36,.92)'; rr(xr, yy, 140, 20, 6); ctx.fill(); ctx.strokeStyle = '#2f3b5c'; ctx.stroke(); ctx.fillStyle = cd > 0 ? '#6b7593' : '#e8ecf5'; ctx.font = `bold 11.5px ${FONT}`; ctx.fillText(label, xr + 8, yy + 14); if (cd > 0) { ctx.textAlign = 'right'; ctx.fillText(cd.toFixed(1), xr + 134, yy + 14); ctx.textAlign = 'left'; } };
+  if (lol) { ctx.font = `11px ${FONT}`; ctx.fillStyle = INPUT.attacking ? '#ffb36b' : '#7d88a6'; ctx.fillText(INPUT.attacking ? '⚔ 普攻中（右鍵地面或 S 停止）' : '右鍵敵人＝普攻・A 攻擊・S 停止', xr, y - 8); }
   small(y, 'Space 跳躍' + (m.air ? (m.jumps >= 2 ? '（已二段）' : '（可二段）') : ''), 0);
   small(y + 23, (lol ? 'D' : 'Shift') + ' 閃避', Math.max(0, m.dodgeCd || 0));
   small(y + 46, (lol ? 'F' : 'Tab') + ' 換下一隻', s.switchCd);

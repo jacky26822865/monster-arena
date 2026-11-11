@@ -232,5 +232,10 @@ function moveDesc(mv) {
   if (mv.note) a.push(mv.note);
   return a.join('・');
 }
+// 普攻（LoL 式右鍵攻擊）：物理屬性＝近戰，特殊屬性＝追蹤遠程彈；不消耗 PP，間隔由速度決定
+for (const t of TYPE_KEYS) {
+  MOVES['b_' + t + '_m'] = { name: '普攻', type: t, power: 15, acc: 0, pp: 99, shape: 'melee', reach: 72, arc: 90, contact: true, basic: true };
+  MOVES['b_' + t + '_r'] = { name: '普攻', type: t, power: 12, acc: 0, pp: 99, shape: 'proj', spd: 900, r: 9, range: 400, basic: true };
+}
 function finalizeMoves() { for (const k in MOVES) { MOVES[k].id = k; MOVES[k].pri = MOVES[k].pri || 0; } }
 finalizeMoves();

@@ -6,10 +6,21 @@
 const mouse = { x: W / 2, y: H / 2 }, mouseNDC = { x: 0, y: 0 };
 const touchMode = !!((window.matchMedia && matchMedia('(pointer: coarse)').matches) || ('ontouchstart' in window));
 let savedScheme = 'lol'; try { savedScheme = localStorage.getItem('ma_scheme') || 'lol'; } catch (e) {}
-const INPUT = { scheme: savedScheme, touch: touchMode, aiming: null, moveTo: null, pending: null, keys: new Set(), rmb: false, lastAim: null, aimHold: 0, lastDir: { x: 1, y: 0 }, padActive: false, sendT: 0, touchAim: null };
+let savedStyle = 'release'; try { savedStyle = localStorage.getItem('ma_cast') || 'release'; } catch (e) {}
+const INPUT = { castStyle: savedStyle, hover: false, attacking: false, scheme: savedScheme, touch: touchMode, aiming: null, moveTo: null, pending: null, keys: new Set(), rmb: false, lastAim: null, aimHold: 0, lastDir: { x: 1, y: 0 }, padActive: false, sendT: 0, touchAim: null };
 const joyMove = { x: 0, y: 0, m: 0 }, padMove = { x: 0, y: 0, m: 0 }; let padPrev = [], padAim = null;
 function setScheme(s) { INPUT.scheme = s; INPUT.aiming = null; INPUT.moveTo = null; try { localStorage.setItem('ma_scheme', s); } catch (e) {} }
+function setCastStyle(s) { INPUT.castStyle = s; INPUT.aiming = null; try { localStorage.setItem('ma_cast', s); } catch (e) {} }
 function myMon() { return G && activeOf(G.me); }
+// 用「螢幕座標」判斷滑鼠是否指在對手身上（模型有高度，不能只看地面投影）
+function enemyUnderCursor() {
+  if (!G) return null; const m = myMon(), E = m && foeActive(m); if (!E || !E.model) return null;
+  const sx = (mouseNDC.x + 1) / 2 * W, sy = (1 - mouseNDC.y) / 2 * H, top = E.model.userData.top || 60;
+  for (const h of [(E.z || 0) + top * .25, (E.z || 0) + top * .6, (E.z || 0) + top * .9]) { const p = prj(E.x, h, E.y); if (Math.hypot(p.X - sx, p.Y - sy) < 42) return E; }
+  return null;
+}
+function startAttack(once) { if (!canPlay()) return; INPUT.attacking = !once; INPUT.moveTo = null; INPUT.pending = null; act({ a: 'atk', once: !!once }); }
+function stopAttack() { if (INPUT.attacking) { INPUT.attacking = false; act({ a: 'stop' }); } }
 function canPlay() { return !!(G && !G.over && !G.paused && !myMon().fainted); }
 function act(a) { if (!G || G.over) return; if (G.net === 'client') NET.send(Object.assign({ t: 'act' }, a)); else applyAction(G.sides[G.me], a); }
 function autoAim(mv) {
@@ -48,16 +59,17 @@ addEventListener('keydown', e => {
   const map = lol ? LOL_KEYS : WASD_KEYS;
   if (e.code in map && !e.repeat) {
     const i = map[e.code], mv = MOVES[allPPOut(m) ? 'struggle' : m.moves[i]];
-    if (lol && castMode(mv) !== 'self' && castMode(mv) !== 'unit') INPUT.aiming = { i, mv, key: e.code };
-    else castIdx(i, castMode(mv) === 'self' ? { x: m.x, y: m.y } : { x: mouse.x, y: mouse.y });
+    const md = castMode(mv);
+    if (lol && md !== 'self' && md !== 'unit' && INPUT.castStyle !== 'quick') { if (INPUT.castStyle === 'click' && INPUT.aiming && INPUT.aiming.i === i) INPUT.aiming = null; else INPUT.aiming = { i, mv, key: e.code }; }
+    else castIdx(i, md === 'self' ? { x: m.x + Math.cos(m.face) * 60, y: m.y + Math.sin(m.face) * 60 } : { x: mouse.x, y: mouse.y });
   }
   if (e.code === 'Space' && !e.repeat) doJumpMine();
-  if (lol) { if (e.code === 'KeyD') doDodgeMine(mouse.x - m.x, mouse.y - m.y); if (e.code === 'KeyF') doSwitchMine(); }
+  if (lol) { if (e.code === 'KeyD') doDodgeMine(mouse.x - m.x, mouse.y - m.y); if (e.code === 'KeyF') doSwitchMine(); if (e.code === 'KeyA' && !e.repeat) startAttack(false); if (e.code === 'KeyS') { stopAttack(); INPUT.moveTo = null; INPUT.pending = null; INPUT.aiming = null; } }
   else { if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { const k = wasdVec(); doDodgeMine(k.x || Math.cos(m.face), k.y || Math.sin(m.face)); } if (e.code === 'Tab' || e.code === 'KeyQ') doSwitchMine(); }
 });
 addEventListener('keyup', e => {
   INPUT.keys.delete(e.code);
-  const A = INPUT.aiming; if (A && A.key === e.code) { INPUT.aiming = null; castIdx(A.i, { x: mouse.x, y: mouse.y }); }
+  const A = INPUT.aiming; if (A && A.key === e.code && INPUT.castStyle === 'release') { INPUT.aiming = null; castIdx(A.i, { x: mouse.x, y: mouse.y }); }
 });
 addEventListener('blur', () => { INPUT.keys.clear(); INPUT.aiming = null; INPUT.rmb = false; });
 function wasdVec() { let x = 0, y = 0; const k = INPUT.keys; if (k.has('KeyW') || k.has('ArrowUp')) y--; if (k.has('KeyS') || k.has('ArrowDown')) y++; if (k.has('KeyA') || k.has('ArrowLeft')) x--; if (k.has('KeyD') || k.has('ArrowRight')) x++; return { x, y }; }
@@ -68,9 +80,9 @@ stage.addEventListener('mousemove', e => { const r = stage.getBoundingClientRect
 stage.addEventListener('mousedown', e => {
   if (touchMode || !canPlay()) return; updateMouseWorld();
   if (INPUT.scheme === 'lol') {
-    if (e.button === 2) { if (INPUT.aiming) { INPUT.aiming = null; return; } INPUT.moveTo = { x: mouse.x, y: mouse.y }; INPUT.rmb = true; INPUT.pending = null; }
+    if (e.button === 2) { if (INPUT.aiming) { INPUT.aiming = null; return; } if (enemyUnderCursor()) { startAttack(false); return; } stopAttack(); INPUT.moveTo = { x: mouse.x, y: mouse.y }; INPUT.rmb = true; INPUT.pending = null; }
     if (e.button === 0 && INPUT.aiming) { const A = INPUT.aiming; INPUT.aiming = null; castIdx(A.i, { x: mouse.x, y: mouse.y }); }
-  } else { if (e.button === 0) castIdx(0, { x: mouse.x, y: mouse.y }); if (e.button === 2) castIdx(1, { x: mouse.x, y: mouse.y }); }
+  } else { if (e.button === 0) startAttack(true); }
 });
 addEventListener('mouseup', e => { if (e.button === 2) INPUT.rmb = false; });
 stage.addEventListener('contextmenu', e => e.preventDefault());
@@ -98,6 +110,7 @@ if (touchMode) { document.body.classList.add('touch'); }
   bindBtn(document.getElementById('tbJump'), { tap: () => { if (canPlay()) act({ a: 'jump', dx: joyMove.x, dy: joyMove.y }); } });
   bindBtn(document.getElementById('tbDodge'), { tap: () => { const m = myMon(); if (m) doDodgeMine(joyMove.x || Math.cos(m.face), joyMove.y || Math.sin(m.face)); } });
   bindBtn(document.getElementById('tbSwitch'), { tap: doSwitchMine });
+  bindBtn(document.getElementById('tbAtk'), { tap: () => startAttack(false) });
   bindBtn(document.getElementById('tbPause'), { tap: () => { if (G && !G.over && G.net === 'local') { G.userPause = !G.userPause; G.paused = G.userPause; } } });
 })();
 const tbCache = {};
@@ -124,7 +137,7 @@ function pollPad() {
   const P = myMon(); if (Math.hypot(rx, ry) > .35) { const l = Math.hypot(rx, ry); padAim = { x: P.x + rx / l * 340, y: P.y + ry / l * 340 }; }
   if (edge(9)) { if (G.over) { if (typeof onPadStart === 'function') onPadStart(); } else if (G.net === 'local') { G.userPause = !G.userPause; G.paused = G.userPause; } }
   if (canPlay()) { if (edge(0)) act({ a: 'jump', dx: padMove.x, dy: padMove.y }); if (edge(1)) doDodgeMine(padMove.x || Math.cos(P.face), padMove.y || Math.sin(P.face));
-    for (const [b, i] of [[2, 0], [3, 1], [4, 2], [5, 3], [6, 2], [7, 3]]) if (edge(b)) castIdx(i, padAim); if (edge(8)) doSwitchMine(); }
+    for (const [b, i] of [[2, 0], [3, 1], [4, 2], [5, 3], [6, 2]]) if (edge(b)) castIdx(i, padAim); if (edge(7)) startAttack(false); if (edge(8)) doSwitchMine(); }
   padPrev = pr;
 }
 
@@ -138,7 +151,9 @@ function updateInput(dt) {
   else if (padMove.m > .12) { mx = padMove.x; my = padMove.y; manual = true; }
   else if (INPUT.scheme === 'wasd') { const k = wasdVec(); if (k.x || k.y) { const l = Math.hypot(k.x, k.y); mx = k.x / l; my = k.y / l; manual = true; } }
   else { const k = arrowVec(); if (k.x || k.y) { const l = Math.hypot(k.x, k.y); mx = k.x / l; my = k.y / l; manual = true; } }
-  if (manual) { INPUT.moveTo = null; INPUT.pending = null; }
+  if (manual) { INPUT.moveTo = null; INPUT.pending = null; stopAttack(); }
+  INPUT.hover = !touchMode && !INPUT.padActive && !!enemyUnderCursor();
+  if (INPUT.attacking && (!foeActive(m) || m.fainted)) INPUT.attacking = false;
   if (INPUT.rmb && INPUT.scheme === 'lol' && !touchMode) INPUT.moveTo = { x: mouse.x, y: mouse.y };
   if (INPUT.pending && !m.fainted) {
     const E = foeActive(m), mv = MOVES[m.moves[INPUT.pending.i]];

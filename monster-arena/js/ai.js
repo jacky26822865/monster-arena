@@ -56,6 +56,7 @@ function aiChoose(m, t, d) {
     s *= .85 + Math.random() * .3; if (!best || s > best.s) best = { id, s };
   }
   if (best && best.s > .12) tryCast(m, best.id, { x: t.x, y: t.y });
+  else if (d <= basicRange(m) + t.r) tryBasic(m, t);
 }
 function aiAim(m, mv) {
   const t = foeActive(m); if (!t) return { x: m.x + Math.cos(m.face) * 100, y: m.y + Math.sin(m.face) * 100 };

@@ -74,6 +74,8 @@ function showDetail() {
   $('dStats').innerHTML = STAT_KEYS.map(k => `<div class="r"><span class="dim">${STATN[k]}</span><span class="bar"><i style="width:${Math.min(100, sp.base[k] / 1.5)}%;background:${sp.base[k] >= 100 ? '#5cd68a' : sp.base[k] >= 75 ? '#e8c95a' : '#e8885a'}"></i></span><span class="v ${nn[1] === k ? 'up' : nn[2] === k ? 'dn' : ''}">${sp.base[k]} → ${st[k]}</span></div>`).join('') + '<div class="dim small">種族值 → Lv.50 實際值</div>';
   drawRadar(sp);
   const keys = INPUT.scheme === 'lol' ? ['Q', 'W', 'E', 'R'] : ['1', '2', '3', '4'];
+  const fake = { stats: st, st: { spe: 0 }, status: null }; const bm = MOVES['b_' + sp.types[0] + (PHYSICAL.has(sp.types[0]) ? '_m' : '_r')];
+  $('dSpeed').innerHTML = `🏃 移動速度 <b>${Math.round(moveSpeed(fake))}</b>・⚔ 普攻（${bm.shape === 'melee' ? '近戰' : '遠程'}，${TYPES[bm.type].n}系）每 <b>${atkInterval(fake).toFixed(2)}</b> 秒・技能冷卻 ×<b>${cdMult(fake).toFixed(2)}</b>`;
   $('dMoves').innerHTML = sp.moves.map((id, i) => { const m = MOVES[id]; return `<div class="mv"><span class="key">${keys[i]}</span><span class="n">${chip(m.type)} ${esc(m.name)} <span class="dim" style="font-weight:400">${category(m)}</span><span class="mode">${CAST_LABEL[castMode(m)]}</span></span><span class="s">威力 ${m.power || '—'}・命中 ${m.acc || '—'}・PP ${m.pp}${moveRange(m) ? '・範圍 ' + Math.round(moveRange(m)) : ''}</span><span class="d">${moveDesc(m)}</span></div>`; }).join('');
   $('dPhotoClear').classList.toggle('hidden', !photoSel[sp.id]);
   const inTeam = SEL.picks.includes(sp.id); $('addBtn').textContent = inTeam ? '移出隊伍' : (SEL.picks.length >= 3 ? '隊伍已滿（3 隻）' : '加入隊伍'); $('addBtn').disabled = !inTeam && SEL.picks.length >= 3;
@@ -104,7 +106,7 @@ function openSelect(mode) {
   SEL.mode = mode; $('modeBadge').textContent = mode === 'solo' ? '單人對戰' : `連線對戰・房號 ${NET.code}・你是${NET.role === 'host' ? '房主' : '挑戰者'}`;
   document.querySelectorAll('.solo-only').forEach(e => e.classList.toggle('hidden', mode !== 'solo'));
   $('oppBadge').classList.toggle('hidden', mode === 'solo'); if (mode === 'online') NET.ready = false;
-  $('schemeSel').value = INPUT.scheme; $('hq').checked = R3.hq;
+  $('schemeSel').value = INPUT.scheme; $('hq').checked = R3.hq; $('castSel').value = INPUT.castStyle; $('castSel').parentElement.classList.toggle('hidden', INPUT.scheme !== 'lol');
   show('select'); if (!PV) PV = new Preview($('pvCanvas'), 460, 300); buildFilters(); buildRoster(); showDetail(); refreshTeam();
 }
 function buildMapModal() {
@@ -159,7 +161,7 @@ function openCreator() {
   $('cParts').innerHTML = Object.entries(PARTS).map(([k, v]) => `<label data-p="${k}"><input type="checkbox" value="${k}">${v}</label>`).join('');
   $('cParts').querySelectorAll('label').forEach(l => l.querySelector('input').onchange = () => { l.classList.toggle('on', l.querySelector('input').checked); crPreview(); });
   $('cStats').innerHTML = STAT_KEYS.map(k => `<div class="r"><span>${STATN[k]}</span><input type="range" min="5" max="160" data-s="${k}"><b data-v="${k}"></b></div>`).join('');
-  const moveOpts = Object.values(MOVES).filter(m => m.id !== 'struggle').sort((a, b) => a.type.localeCompare(b.type)).map(m => `<option value="${m.id}">[${TYPES[m.type].n}] ${m.name}（${category(m)} ${m.power || '—'}／${CAST_LABEL[castMode(m)]}）</option>`).join('');
+  const moveOpts = Object.values(MOVES).filter(m => m.id !== 'struggle' && !m.basic).sort((a, b) => a.type.localeCompare(b.type)).map(m => `<option value="${m.id}">[${TYPES[m.type].n}] ${m.name}（${category(m)} ${m.power || '—'}／${CAST_LABEL[castMode(m)]}）</option>`).join('');
   $('cMoves').innerHTML = [0, 1, 2, 3].map(i => `<label class="field">技能 ${i + 1}<select data-m="${i}">${moveOpts}</select></label>`).join('');
   document.querySelectorAll('#creator input,#creator select').forEach(el => { if (el.id !== 'cImport') el.addEventListener('input', crPreview); });
   crLoad(CRE.editing ? speciesById(CRE.editing) || crDefault() : crDefault()); crList();
@@ -222,7 +224,8 @@ function initUI() {
   $('addBtn').onclick = () => togglePick(SEL.cur);
   $('randTeam').onclick = () => { SEL.picks = SPECIES.map(s => s.id).sort(() => Math.random() - .5).slice(0, 3); refreshTeam(); buildRoster(); showDetail(); if (SEL.mode === 'online') { NET.ready = false; sendPick(); } };
   $('mapBtn').onclick = () => { buildMapModal(); $('mapModal').classList.remove('hidden'); }; $('mapClose').onclick = () => $('mapModal').classList.add('hidden');
-  $('schemeSel').onchange = () => { setScheme($('schemeSel').value); showDetail(); };
+  $('schemeSel').onchange = () => { setScheme($('schemeSel').value); showDetail(); $('castSel').parentElement.classList.toggle('hidden', INPUT.scheme !== 'lol'); };
+  $('castSel').value = INPUT.castStyle; $('castSel').onchange = () => setCastStyle($('castSel').value);
   $('hq').onchange = () => setHQ($('hq').checked);
   $('goBtn').onclick = onGo;
   $('helpClose').onclick = () => toggleHelp(false);

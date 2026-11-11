@@ -11,7 +11,8 @@
 <div id="wrap"><div id="stage"><canvas id="cv"></canvas>
   <div id="touch">
     <div id="joyZone"><div id="joyHint">移動</div><div id="joyBase"><div id="joyKnob"></div></div></div>
-    <div class="tb" id="tbJump" style="--x:1168;--y:650;--d:132"><div class="cd"></div><div class="lb">跳躍</div></div>
+    <div class="tb" id="tbAtk" style="--x:1126;--y:556;--d:84"><div class="cd"></div><div class="lb">普攻</div></div>
+    <div class="tb" id="tbJump" style="--x:1172;--y:658;--d:118"><div class="cd"></div><div class="lb">跳躍</div></div>
     <div class="tb" id="tb0" style="--x:1028;--y:686;--d:106"><div class="cd"></div><div class="lb"></div></div>
     <div class="tb" id="tb1" style="--x:1008;--y:550;--d:106"><div class="cd"></div><div class="lb"></div></div>
     <div class="tb" id="tb2" style="--x:1092;--y:448;--d:106"><div class="cd"></div><div class="lb"></div></div>
@@ -81,6 +82,7 @@
           <label class="pbtn">📷 放入照片<input type="file" id="dPhoto" accept="image/*" hidden></label>
           <button class="ghost small hidden" id="dPhotoClear">移除照片</button>
         </div>
+        <div id="dSpeed" class="ab"></div>
         <div id="dMoves" class="moves"></div>
         <button id="addBtn" class="primary wide">加入隊伍</button>
       </div>
@@ -92,6 +94,7 @@
       <button class="mapbtn" id="mapBtn"></button>
       <label class="solo-only">難度 <select id="diffSel"><option value="easy">簡單</option><option value="normal" selected>普通</option><option value="hard">困難</option></select></label>
       <label class="scheme-opt">操作 <select id="schemeSel"><option value="lol">LoL 式（右鍵移動＋QWER）</option><option value="wasd">WASD＋滑鼠</option></select></label>
+      <label class="scheme-opt">施放 <select id="castSel"><option value="release">按住看範圍、放開施放</option><option value="quick">快速施放（按下就放）</option><option value="click">按鍵後左鍵確認（LoL 預設）</option></select></label>
       <label><input type="checkbox" id="hq" checked> 高畫質</label>
       <button class="ghost" id="randTeam">隨機</button>
       <button class="primary" id="goBtn">開始對戰</button>
@@ -166,22 +169,24 @@
   <h2>操作與規則</h2>
   <h3>LoL 式操作（預設）</h3>
   <table>
-    <tr><th>滑鼠右鍵</th><td>移動到指定位置（按住可以一直拖著走）；瞄準中按右鍵＝取消</td></tr>
-    <tr><th>Q W E R</th><td>四個技能。<b>按住</b>會顯示範圍，<b>放開</b>就往滑鼠方向施放（瞄準中按左鍵也會立刻施放）</td></tr>
+    <tr><th>滑鼠右鍵</th><td>點地面＝移動（按住可以一直拖著走）；<b>點對手＝普攻</b>（自動追到射程內持續攻擊）；瞄準中按右鍵＝取消</td></tr>
+    <tr><th>Q W E R</th><td>四個技能。施放方式可在選角畫面切換：<b>按住看範圍、放開施放</b>（預設）｜<b>快速施放</b>（按下立刻往滑鼠方向放）｜<b>按鍵後左鍵確認</b>（LoL 預設操作）</td></tr>
+    <tr><th>A / S</th><td>A＝攻擊對手（同右鍵點對手）｜S＝停止移動與攻擊</td></tr>
+    <tr><th>普攻</th><td>不耗 PP。物理屬性的怪獸是近戰，特殊屬性的是追蹤遠程彈；<b>速度越快，普攻間隔越短</b>（0.55～1.5 秒）</td></tr>
     <tr><th>技能類型</th><td><b>方向</b>：往滑鼠方向射出或衝出｜<b>落點</b>：在滑鼠位置延遲爆發｜<b>指定</b>：必中技，自動鎖定對手，太遠會先走過去再放｜<b>自身</b>：按下立刻生效</td></tr>
     <tr><th>Space</th><td>跳躍（空中再按一次是二段跳）。移動中起跳會往前跳</td></tr>
     <tr><th>D / F</th><td>D 往滑鼠方向閃避（短暫無敵）｜F 換下一隻</td></tr>
   </table>
   <h3>WASD 模式</h3>
-  <p>WASD 移動、滑鼠瞄準、1–4 或 左／右鍵 施放、Space 跳、Shift 閃避、Tab 換人。</p>
+  <p>WASD 移動、滑鼠瞄準、1–4 施放、左鍵普攻、Space 跳、Shift 閃避、Tab 換人。</p>
   <h3>手機與手把</h3>
-  <p>手機請橫放：左半邊按住拖曳＝搖桿；技能鈕點一下自動瞄準、按住拖曳自己瞄準。手把：左搖桿移動、右搖桿瞄準、A 跳、B 閃避、X/Y/LB/RB 技能、Back 換人、Start 暫停。</p>
+  <p>手機請橫放：左半邊按住拖曳＝搖桿；技能鈕點一下自動瞄準、按住拖曳自己瞄準。手把：左搖桿移動、右搖桿瞄準、A 跳、B 閃避、X/Y/LB/RB 技能、RT 普攻、Back 換人、Start 暫停。</p>
   <h3>第三代公式</h3>
   <table>
     <tr><th>能力值</th><td><code>HP = ⌊(2B+IV+⌊EV/4⌋)×L/100⌋+L+10</code>　其他：<code>⌊(⌊(2B+IV+⌊EV/4⌋)×L/100⌋+5)×性格⌋</code>（Lv.50、IV 31）</td></tr>
     <tr><th>傷害</th><td><code>⌊⌊⌊2L/5+2⌋×威力×攻/防⌋/50⌋</code> → 灼傷物理減半 → 天氣 → +2 → 會心 ×2 → 屬性一致 ×1.5 → 相剋 → 亂數 85–100%</td></tr>
     <tr><th>物理／特殊</th><td>依屬性決定：一般、格鬥、飛行、毒、地面、岩石、蟲、幽靈、鋼＝物理，其他＝特殊</td></tr>
-    <tr><th>即時制換算</th><td>1 回合＝1.5 秒；速度影響移速與冷卻；先制技幾乎沒有前搖；命中率影響判定大小；PP 照原作次數</td></tr>
+    <tr><th>即時制換算</th><td>1 回合＝1.5 秒；速度影響移動速度（90＋速度×0.9）、普攻間隔與技能冷卻；先制技幾乎沒有前搖；命中率影響判定大小；PP 照原作次數</td></tr>
     <tr><th>跳躍</th><td>可跳過震波、躲過低空射擊、站上障礙物；空中使用震地類技能會變成下砸</td></tr>
   </table>
   <h3>場地</h3>

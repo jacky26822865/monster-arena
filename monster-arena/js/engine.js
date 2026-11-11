@@ -33,11 +33,12 @@ function makeMon(sp, nature, side, ti, photo) {
   const m = { sp, name: sp.name, types: sp.types, ability: sp.ability, nature, stats, maxhp: stats.hp, hp: stats.hp, side, ti, photo: photo || null,
     moves: sp.moves.slice(), pp: {}, cd: {}, cdMax: {}, fainted: false, status: null, slpT: 0, r: 26, x: 0, y: 0, face: 0, hitFlash: 0, lavaT: 0 };
   for (const id of m.moves) { m.pp[id] = MOVES[id].pp; m.cd[id] = 0; m.cdMax[id] = 1; }
+  m.basicId = 'b_' + m.types[0] + (PHYSICAL.has(m.types[0]) ? '_m' : '_r');
   resetVolatile(m); return m;
 }
 function resetVolatile(m) {
   Object.assign(m, { st: { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0, eva: 0 }, seeded: null, toxicN: 1, flinchT: 0, cast: null, dash: null, dodge: null, invT: 0, dodgeCd: 0, gcd: 0, turnAcc: 0, boostN: 0,
-    vx: 0, vy: 0, kbx: 0, kby: 0, inX: 0, inY: 0, z: 0, vz: 0, jumps: 0, air: false, mvx: 0, mvy: 0, slam: null, squash: 0, flip: 0 });
+    vx: 0, vy: 0, kbx: 0, kby: 0, inX: 0, inY: 0, atkTarget: false, atkCd: 0, z: 0, vz: 0, jumps: 0, air: false, mvx: 0, mvy: 0, slam: null, squash: 0, flip: 0 });
 }
 function spawnPos(i) { return i === 0 ? { x: 220, y: 375 } : { x: 1060, y: 375 }; }
 function activeOf(i) { const s = G.sides[i]; return s.team[s.idx]; }
@@ -96,7 +97,11 @@ function inflict(m, st, quiet, src) {
   return true;
 }
 function effSpe(m) { let v = applyStage(m.stats.spe, m.st.spe); if (m.status === 'PAR') v = Math.floor(v / 4); return v; }
-function moveSpeed(m) { return clamp(110 + effSpe(m) * .7, 95, 330); }
+function moveSpeed(m) { return clamp(90 + effSpe(m) * .9, 80, 360); }
+// 普攻間隔（類似 LoL 的攻速）：速度越快，間隔越短
+function atkInterval(m) { return clamp(1.7 - effSpe(m) / 220, .55, 1.5); }
+function basicRange(m) { const mv = MOVES[m.basicId]; return mv.shape === 'melee' ? (mv.reach || 72) + m.r : (mv.range || 400) * .85; }
+function tryBasic(m, f) { if (!canAct(m) || m.gcd > 0 || m.atkCd > 0) return false; m.cast = { id: m.basicId, t: .12, total: .12, aim: { x: f.x, y: f.y }, basic: true }; return true; }
 function cdMult(m) { return clamp(1.15 - effSpe(m) / 600, .8, 1.12); }
 function incapacitated(m) { return m.status === 'SLP' || m.status === 'FRZ' || m.flinchT > 0; }
 function canAct(m) { return !m.fainted && !m.cast && !m.dash && !m.dodge && !incapacitated(m); }
@@ -223,7 +228,9 @@ function tryCast(m, id, aim) {
   m.cast = { id, t: castTime(mv), total: castTime(mv), aim: { x: aim.x, y: aim.y } }; return true;
 }
 function finishCast(m) {
-  const c = m.cast; m.cast = null; const mv = MOVES[c.id]; m.gcd = .22;
+  const c = m.cast; m.cast = null; const mv = MOVES[c.id];
+  if (c.basic) { m.gcd = .08; m.atkCd = atkInterval(m); const f = foeActive(m); if (m.status === 'PAR' && Math.random() < .25) { say(m, '全身麻痺！', '#f8d030'); return; } execMove(m, mv, f ? { x: f.x, y: f.y } : c.aim); if (m.atkTarget === 'once') m.atkTarget = false; return; }
+  m.gcd = .22;
   if (m.status === 'PAR' && Math.random() < .25) { say(m, '全身麻痺！', '#f8d030'); log(`${m.name} 全身麻痺，無法動彈！`, '#f8d030'); if (c.id !== 'struggle') m.cd[c.id] = Math.max(m.cd[c.id], .6); return; }
   if (c.id !== 'struggle') { m.pp[c.id]--; const cd = baseCd(mv) * cdMult(m); m.cd[c.id] = cd; m.cdMax[c.id] = cd; }
   log(`${m.name} 使出了 ${mv.name}！`, isMe(m.side) ? '#8fdcff' : '#ff9c9c');
@@ -288,6 +295,8 @@ function applyAction(side, a) {
   else if (a.a === 'jump') doJump(m, +a.dx || 0, +a.dy || 0);
   else if (a.a === 'dodge') doDodge(m, +a.dx || 0, +a.dy || 0);
   else if (a.a === 'switch') doSwitch(side);
+  else if (a.a === 'atk') m.atkTarget = a.once ? 'once' : true;
+  else if (a.a === 'stop') m.atkTarget = false;
 }
 
 // ---------- 更新 ----------
@@ -301,12 +310,22 @@ function collide(m) {
   return hitAny;
 }
 function updateMon(m, dt, side) {
-  m.gcd -= dt; m.invT -= dt; m.flinchT -= dt; m.dodgeCd -= dt; m.hitFlash -= dt;
+  m.gcd -= dt; m.invT -= dt; m.flinchT -= dt; m.dodgeCd -= dt; m.hitFlash -= dt; m.atkCd -= dt;
   for (const id of m.moves) if (m.cd[id] > 0) m.cd[id] -= dt;
   if (m.status === 'SLP') { m.slpT -= dt; if (m.slpT <= 0) { m.status = null; say(m, '醒來了！', '#e6f2ff'); log(`${m.name} 醒過來了！`); } }
   m.turnAcc += dt; while (m.turnAcc >= TURN) { m.turnAcc -= TURN; endTurn(m); if (m.fainted) return; }
   if (side.isAI) aiUpdate(m, dt);
-  else { const c = side.ctl; const l = Math.hypot(c.inX, c.inY); const k = l > 1 ? 1 / l : 1; m.inX = c.inX * k; m.inY = c.inY * k; if (!m.dash && !incapacitated(m)) m.face = Math.atan2(c.aim.y - m.y, c.aim.x - m.x); }
+  else {
+    const c = side.ctl; const l = Math.hypot(c.inX, c.inY); const k = l > 1 ? 1 / l : 1; m.inX = c.inX * k; m.inY = c.inY * k; let face = c.aim;
+    if (m.atkTarget) {   // 普攻目標：追到射程內就自動攻擊
+      const f = foeActive(m);
+      if (!f) m.atkTarget = false;
+      else { const d = dist(m, f), rg = basicRange(m) + f.r * .5; face = f;
+        if (d > rg) { if (m.atkTarget === 'once') m.atkTarget = false; else { m.inX = (f.x - m.x) / d; m.inY = (f.y - m.y) / d; } }
+        else { m.inX = m.inY = 0; tryBasic(m, f); } }
+    }
+    if (!m.dash && !incapacitated(m)) m.face = Math.atan2(face.y - m.y, face.x - m.x);
+  }
   if (m.cast) { if (incapacitated(m)) m.cast = null; else { m.cast.t -= dt; if (m.cast.t <= 0) finishCast(m); } }
   let vx = 0, vy = 0;
   if (m.dash) {

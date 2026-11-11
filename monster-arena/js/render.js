@@ -226,6 +226,7 @@ function render3D(dt) {
     const P = activeOf(me), E = activeOf(1 - me);
     R3.ringP.visible = !P.fainted; R3.ringP.position.set(P.x - W / 2, Math.max(1.2, groundH(P.x, P.y) + 1.2), P.y - 375);
     R3.ringE.visible = !E.fainted; R3.ringE.position.set(E.x - W / 2, Math.max(1.2, groundH(E.x, E.y) + 1.2), E.y - 375);
+    const hov = INPUT.hover || INPUT.attacking; R3.ringE.scale.setScalar(hov ? 1.12 + .06 * Math.sin(T * 10) : 1); R3.ringE.material.opacity = hov ? .95 : .6; stage.style.cursor = INPUT.touch ? 'default' : (INPUT.hover ? 'pointer' : 'crosshair');
     const showAim = !P.fainted && !G.over && !INPUT.touch; R3.cross.visible = R3.aimLine.visible = showAim && INPUT.scheme !== 'lol';
     R3.cross.position.x = mouse.x - W / 2; R3.cross.position.z = mouse.y - 375; R3.cross.rotation.y = T * 1.5;
     const ap = R3.aimLine.geometry.attributes.position; ap.setXYZ(0, P.x - W / 2, 3, P.y - 375); ap.setXYZ(1, mouse.x - W / 2, 3, mouse.y - 375); ap.needsUpdate = true;
@@ -236,8 +237,9 @@ function render3D(dt) {
     R3.sun.color.set(wt === 'SUN' ? '#ffe2b0' : wt === 'RAIN' ? '#a8c0ff' : R3.sunColor);
     R3.hemi.intensity = wt === 'RAIN' ? R3.hemiBase * .7 : R3.hemiBase; R3.rain.visible = wt === 'RAIN';
     for (const m of [P, E]) if (!m.fainted && m.hitFlash > .13) R3.shake = Math.max(R3.shake, m === P ? 7 : 4);
-    let tx = P.x, ty = P.y; if (!P.fainted && !E.fainted) { tx = P.x + (E.x - P.x) * .38; ty = P.y + (E.y - P.y) * .38; }
-    const d = (P.fainted || E.fainted) ? 600 : dist(P, E), k = clamp(d / 760, .92, 1.3);
+    const lolCam = INPUT.scheme === 'lol' && !INPUT.touch; const wE = lolCam ? .12 : .38;
+    let tx = P.x, ty = P.y; if (!P.fainted && !E.fainted) { tx = P.x + (E.x - P.x) * wE; ty = P.y + (E.y - P.y) * wE; }
+    const d = (P.fainted || E.fainted) ? 600 : dist(P, E), k = lolCam ? 1.08 : clamp(d / 760, .92, 1.3);
     const pz = Math.max(0, P.z || 0);
     const want = new THREE.Vector3(tx - W / 2, 560 * k + pz * .25, ty - 375 + 520 * k), look = new THREE.Vector3(tx - W / 2, 20 + pz * .3, ty - 375 - 20);
     R3.camPos.lerp(want, Math.min(1, dt * 3.5)); R3.camLook.lerp(look, Math.min(1, dt * 4.5));
@@ -297,7 +299,7 @@ function drawOverlay() {
     ctx.font = `bold 12px ${FONT}`; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.strokeText(m.name, top.X, by - 5); ctx.fillStyle = mine ? '#8fdcff' : '#ff9c9c'; ctx.fillText(m.name, top.X, by - 5);
     if (m.status) { ctx.font = `bold 11px ${FONT}`; ctx.fillStyle = STATUSN[m.status][1]; ctx.strokeText(STATUSN[m.status][0], top.X, by + 18); ctx.fillText(STATUSN[m.status][0], top.X, by + 18); }
     if (m.status === 'SLP') { ctx.fillStyle = '#cfd8ff'; ctx.font = `bold ${15 + Math.sin(G.t * 3) * 2}px ${FONT}`; ctx.fillText('Z z', top.X + 34, by - 14); }
-    if (m.cast && MOVES[m.cast.id]) { const c = prj(m.x, m.r * 1.3 + (m.z || 0), m.y), p = 1 - m.cast.t / m.cast.total; ctx.strokeStyle = TYPES[MOVES[m.cast.id].type].c; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(c.X, c.Y, 40, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2); ctx.stroke(); }
+    if (m.cast && MOVES[m.cast.id] && !MOVES[m.cast.id].basic) { const c = prj(m.x, m.r * 1.3 + (m.z || 0), m.y), p = 1 - m.cast.t / m.cast.total; ctx.strokeStyle = TYPES[MOVES[m.cast.id].type].c; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(c.X, c.Y, 40, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2); ctx.stroke(); }
     ctx.textAlign = 'left';
   }
   ctx.textAlign = 'center';
