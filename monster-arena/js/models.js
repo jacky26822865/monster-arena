@@ -125,12 +125,12 @@ function buildModel(m) {
 }
 
 // ---------- 外部 GLB 模型（模組用） ----------
-const glbCache = {};
+const glbCache = {}, glbLoaded = {};
+function loadGLB(url) { if (!THREE.GLTFLoader) return Promise.reject(new Error('no loader')); return glbCache[url] || (glbCache[url] = new Promise((res, rej) => new THREE.GLTFLoader().load(url, g => { glbLoaded[url] = g; res(g); }, undefined, rej))); }
 function attachGLB(root, sp) {
   if (!THREE.GLTFLoader) return;
   const u = root.userData;
-  const load = glbCache[sp.model] || (glbCache[sp.model] = new Promise((res, rej) => new THREE.GLTFLoader().load(sp.model, res, undefined, rej)));
-  load.then(gltf => {
+  const doAttach = gltf => {
     const obj = THREE.SkeletonUtils ? THREE.SkeletonUtils.clone(gltf.scene) : gltf.scene.clone(true);
     const box = new THREE.Box3().setFromObject(obj), size = new THREE.Vector3(); box.getSize(size);
     const k = (26 * 2.2) / Math.max(1e-3, size.y); obj.scale.setScalar(k);
@@ -144,7 +144,9 @@ function attachGLB(root, sp) {
       const idle = find(/idle|stand/i) || gltf.animations[0], walk = find(/walk|run|move/i);
       u.acts = { idle: u.mixer.clipAction(idle), walk: walk ? u.mixer.clipAction(walk) : null }; u.acts.idle.play(); if (u.acts.walk) { u.acts.walk.play(); u.acts.walk.weight = 0; }
     }
-  }).catch(e => console.warn('GLB 載入失敗', sp.model, e));
+  };
+  if (glbLoaded[sp.model]) doAttach(glbLoaded[sp.model]);   // 已載入：同步掛上（縮圖才拍得到）
+  else loadGLB(sp.model).then(doAttach).catch(e => console.warn('GLB 載入失敗', sp.model, e));
 }
 
 // ---------- 動作 ----------

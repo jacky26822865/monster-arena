@@ -75,7 +75,9 @@
           "creamBelly",
           "pinkPaws"
         ]
-      }
+      },
+      "model": "mods/models/chinchi.glb",
+      "scale": 1.15
     }
   ]
 }

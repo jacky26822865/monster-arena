@@ -35,7 +35,9 @@ class Preview {
   snap(sp, photo) { this.set(sp, photo); this.mon.face = Math.PI / 2 - .5; this.model.rotation.y = Math.PI / 2 - this.mon.face; poseModel(this.mon, this.model, 0, 0); this.renderer.render(this.scene, this.cam); return this.renderer.domElement.toDataURL('image/png'); }
 }
 let PV = null, CR = null, SNAP = null; const thumbs = {};
-function thumb(id) { const sp = speciesById(id); if (!sp) return ''; const key = id + '|' + (photoSel[id] || '').length; if (thumbs[key]) return thumbs[key]; if (!SNAP) { const c = document.createElement('canvas'); c.dataset.snap = '1'; SNAP = new Preview(c, 200, 200); } return (thumbs[key] = SNAP.snap(sp, photoSel[id])); }
+let thumbRefresh = null;
+function thumb(id) { const sp = speciesById(id); if (!sp) return '';
+  if (sp.model && !glbLoaded[sp.model]) loadGLB(sp.model).then(() => { for (const k in thumbs) if (k.startsWith(id + '|')) delete thumbs[k]; clearTimeout(thumbRefresh); thumbRefresh = setTimeout(() => { if (!$('select').classList.contains('hidden')) { buildRoster(); refreshTeam(); if (SEL.cur === id) showDetail(); } }, 50); }).catch(() => {}); const key = id + '|' + (photoSel[id] || '').length; if (thumbs[key]) return thumbs[key]; if (!SNAP) { const c = document.createElement('canvas'); c.dataset.snap = '1'; SNAP = new Preview(c, 200, 200); } return (thumbs[key] = SNAP.snap(sp, photoSel[id])); }
 
 // ---------- 照片 ----------
 const photoSel = {}; try { Object.assign(photoSel, JSON.parse(localStorage.getItem('ma_photos') || '{}')); } catch (e) {}
