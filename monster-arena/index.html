@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>元素獸競技場 Monster Arena</title>
+<meta name="description" content="原創元素獸 3D 即時對戰：第三代數值引擎、LoL 式操作、多場地、免伺服器連線對戰、怪獸工坊">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="wrap"><div id="stage"><canvas id="cv"></canvas>
+  <div id="touch">
+    <div id="joyZone"><div id="joyHint">移動</div><div id="joyBase"><div id="joyKnob"></div></div></div>
+    <div class="tb" id="tbJump" style="--x:1168;--y:650;--d:132"><div class="cd"></div><div class="lb">跳躍</div></div>
+    <div class="tb" id="tb0" style="--x:1028;--y:686;--d:106"><div class="cd"></div><div class="lb"></div></div>
+    <div class="tb" id="tb1" style="--x:1008;--y:550;--d:106"><div class="cd"></div><div class="lb"></div></div>
+    <div class="tb" id="tb2" style="--x:1092;--y:448;--d:106"><div class="cd"></div><div class="lb"></div></div>
+    <div class="tb" id="tb3" style="--x:1212;--y:410;--d:106"><div class="cd"></div><div class="lb"></div></div>
+    <div class="tb" id="tbDodge" style="--x:888;--y:698;--d:86"><div class="cd"></div><div class="lb">閃避</div></div>
+    <div class="tb" id="tbSwitch" style="--x:1222;--y:288;--d:74"><div class="cd"></div><div class="lb">換人</div></div>
+    <div class="tb" id="tbPause" style="--x:640;--y:130;--d:58"><div class="cd"></div><div class="lb">❚❚</div></div>
+  </div>
+</div></div>
+
+<!-- 標題 -->
+<section id="title" class="screen">
+  <div class="title-box">
+    <div class="logo"><span>元素獸</span>競技場</div>
+    <div class="logo-sub">MONSTER ARENA ・ 3D 即時動作對戰</div>
+    <div class="menu">
+      <button class="big" data-go="solo">⚔️ 單人對戰<small>對上電腦</small></button>
+      <button class="big" data-go="online">🌐 連線對戰<small>輸入同一個房號就能對打</small></button>
+      <button class="big" data-go="creator">🧪 怪獸工坊<small>捏出你自己的元素獸</small></button>
+      <button class="big ghost" data-go="help">📖 操作與規則</button>
+    </div>
+    <div class="foot">第三代（GBA）數值引擎・16 隻原創元素獸・6 種場地　<span id="modInfo"></span></div>
+  </div>
+</section>
+
+<!-- 連線大廳 -->
+<section id="online" class="screen hidden">
+  <div class="panel narrow">
+    <button class="back" data-go="title">← 返回</button>
+    <h2>🌐 連線對戰</h2>
+    <p class="dim">兩個人輸入<b>同一個房號</b>就會進到同一局。先進房的人是房主，負責選場地和開始。玩家之間直接連線（WebRTC），不需要伺服器。</p>
+    <label class="field">你的暱稱<input id="nick" maxlength="12" placeholder="例如：小勳"></label>
+    <label class="field">房號（英文或數字）<span class="row"><input id="room" maxlength="16" placeholder="例如：abc123"><button class="ghost" id="roomRand" title="隨機房號">🎲</button></span></label>
+    <button id="joinBtn" class="primary wide">進入房間</button>
+    <div id="netStatus" class="status"></div>
+    <ul class="tips">
+      <li>把房號傳給朋友，對方輸入一樣的房號即可。</li>
+      <li>如果一直連不上，多半是網路擋住了直連（行動網路、公司或學校網路常見），換成家裡 Wi-Fi 試試。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 選角 -->
+<section id="select" class="screen hidden">
+  <header class="sel-head">
+    <button class="back" id="selBack">← 返回</button>
+    <h2>選擇隊伍</h2>
+    <span id="modeBadge" class="badge"></span>
+    <span id="oppBadge" class="badge opp hidden"></span>
+  </header>
+  <div class="sel-body">
+    <div class="roster">
+      <div id="typeFilter" class="filters"></div>
+      <div id="rosterGrid" class="grid"></div>
+    </div>
+    <div class="detail">
+      <div class="pv-wrap"><canvas id="pvCanvas" width="460" height="300"></canvas><div class="pv-name" id="pvName"></div></div>
+      <div class="detail-info">
+        <div class="row-top"><div id="dTypes"></div><div class="dim" id="dSrc"></div></div>
+        <div class="ab" id="dAbility"></div>
+        <div class="two">
+          <canvas id="radar" width="200" height="190"></canvas>
+          <div id="dStats" class="stats"></div>
+        </div>
+        <div class="row-ctl">
+          <label>性格 <select id="dNature"></select></label>
+          <label class="pbtn">📷 放入照片<input type="file" id="dPhoto" accept="image/*" hidden></label>
+          <button class="ghost small hidden" id="dPhotoClear">移除照片</button>
+        </div>
+        <div id="dMoves" class="moves"></div>
+        <button id="addBtn" class="primary wide">加入隊伍</button>
+      </div>
+    </div>
+  </div>
+  <footer class="sel-foot">
+    <div class="team" id="teamSlots"></div>
+    <div class="opts">
+      <button class="mapbtn" id="mapBtn"></button>
+      <label class="solo-only">難度 <select id="diffSel"><option value="easy">簡單</option><option value="normal" selected>普通</option><option value="hard">困難</option></select></label>
+      <label class="scheme-opt">操作 <select id="schemeSel"><option value="lol">LoL 式（右鍵移動＋QWER）</option><option value="wasd">WASD＋滑鼠</option></select></label>
+      <label><input type="checkbox" id="hq" checked> 高畫質</label>
+      <button class="ghost" id="randTeam">隨機</button>
+      <button class="primary" id="goBtn">開始對戰</button>
+    </div>
+  </footer>
+</section>
+
+<!-- 場地選擇 -->
+<section id="mapModal" class="screen modal hidden"><div class="panel">
+  <h2>選擇場地</h2>
+  <div id="mapGrid" class="mapgrid"></div>
+  <div class="right"><button class="ghost" id="mapClose">關閉</button></div>
+</div></section>
+
+<!-- 怪獸工坊 -->
+<section id="creator" class="screen hidden">
+  <header class="sel-head"><button class="back" data-go="title">← 返回</button><h2>🧪 怪獸工坊</h2><span class="badge">做好按「儲存」就會出現在選角畫面</span></header>
+  <div class="cr-body">
+    <div class="cr-form">
+      <div class="grid2">
+        <label class="field">名字<input id="cName" maxlength="12" value="我的元素獸"></label>
+        <label class="field">身體<select id="cBody"></select></label>
+        <label class="field">屬性 1<select id="cT1"></select></label>
+        <label class="field">屬性 2<select id="cT2"></select></label>
+        <label class="field">腳<select id="cLegs"><option value="two">兩隻腳</option><option value="four">四隻腳</option><option value="none">沒有腳（漂浮）</option></select></label>
+        <label class="field">手<select id="cArms"><option value="1">有手</option><option value="0">沒有手</option></select></label>
+        <label class="field">主色（空白＝屬性色）<span class="row"><input type="color" id="cColor" value="#f08030"><label class="mini"><input type="checkbox" id="cColorAuto" checked>用屬性色</label></span></label>
+        <label class="field">配色<input type="color" id="cAcc" value="#ffd25e"></label>
+      </div>
+      <h4>部件 <span class="dim">（可以複選）</span></h4>
+      <div id="cParts" class="chips"></div>
+      <h4>種族值 <span id="cTotal" class="dim"></span></h4>
+      <div id="cStats" class="sliders"></div>
+      <div class="grid2">
+        <label class="field">特性<select id="cAbility"></select></label>
+        <label class="field">性格<select id="cNature"></select></label>
+        <label class="field">努力值配置<select id="cEv"><option value="atk">物攻型（攻擊＋速度）</option><option value="spa">特攻型（特攻＋速度）</option><option value="tank">耐久型（HP＋雙防）</option><option value="mix">平均</option></select></label>
+      </div>
+      <h4>技能（4 招）</h4>
+      <div id="cMoves" class="grid2"></div>
+      <div class="cr-actions">
+        <button class="primary" id="cSave">💾 儲存</button>
+        <button class="ghost" id="cNew">＋ 新的一隻</button>
+        <button class="ghost" id="cExport">⬇ 匯出 JSON</button>
+        <label class="ghost btnlike">⬆ 匯入 JSON<input type="file" id="cImport" accept=".json,application/json" hidden></label>
+        <button class="ghost danger" id="cDelete">🗑 刪除</button>
+      </div>
+      <textarea id="cJson" class="hidden" rows="8" readonly></textarea>
+    </div>
+    <div class="cr-side">
+      <canvas id="crCanvas" width="420" height="380"></canvas>
+      <h4>我做的元素獸</h4>
+      <div id="cList" class="grid small"></div>
+      <p class="dim small">做好的怪獸存在這個瀏覽器。想放上 GitHub 給大家用：按「匯出 JSON」，把檔案放進 <code>mods/</code> 資料夾，再登記到 <code>mods/index.json</code>。</p>
+    </div>
+  </div>
+</section>
+
+<!-- 結算 -->
+<section id="end" class="screen modal hidden"><div class="panel narrow center">
+  <h2 id="endTitle">勝利！</h2>
+  <p id="endInfo" class="dim"></p>
+  <div class="row center">
+    <button class="primary" id="againBtn">再戰一次</button>
+    <button class="ghost" id="toSelBtn">重新選隊</button>
+    <button class="ghost" id="toTitleBtn">回標題</button>
+  </div>
+</div></section>
+
+<!-- 說明 -->
+<section id="help" class="screen modal hidden"><div class="panel">
+  <h2>操作與規則</h2>
+  <h3>LoL 式操作（預設）</h3>
+  <table>
+    <tr><th>滑鼠右鍵</th><td>移動到指定位置（按住可以一直拖著走）；瞄準中按右鍵＝取消</td></tr>
+    <tr><th>Q W E R</th><td>四個技能。<b>按住</b>會顯示範圍，<b>放開</b>就往滑鼠方向施放（瞄準中按左鍵也會立刻施放）</td></tr>
+    <tr><th>技能類型</th><td><b>方向</b>：往滑鼠方向射出或衝出｜<b>落點</b>：在滑鼠位置延遲爆發｜<b>指定</b>：必中技，自動鎖定對手，太遠會先走過去再放｜<b>自身</b>：按下立刻生效</td></tr>
+    <tr><th>Space</th><td>跳躍（空中再按一次是二段跳）。移動中起跳會往前跳</td></tr>
+    <tr><th>D / F</th><td>D 往滑鼠方向閃避（短暫無敵）｜F 換下一隻</td></tr>
+  </table>
+  <h3>WASD 模式</h3>
+  <p>WASD 移動、滑鼠瞄準、1–4 或 左／右鍵 施放、Space 跳、Shift 閃避、Tab 換人。</p>
+  <h3>手機與手把</h3>
+  <p>手機請橫放：左半邊按住拖曳＝搖桿；技能鈕點一下自動瞄準、按住拖曳自己瞄準。手把：左搖桿移動、右搖桿瞄準、A 跳、B 閃避、X/Y/LB/RB 技能、Back 換人、Start 暫停。</p>
+  <h3>第三代公式</h3>
+  <table>
+    <tr><th>能力值</th><td><code>HP = ⌊(2B+IV+⌊EV/4⌋)×L/100⌋+L+10</code>　其他：<code>⌊(⌊(2B+IV+⌊EV/4⌋)×L/100⌋+5)×性格⌋</code>（Lv.50、IV 31）</td></tr>
+    <tr><th>傷害</th><td><code>⌊⌊⌊2L/5+2⌋×威力×攻/防⌋/50⌋</code> → 灼傷物理減半 → 天氣 → +2 → 會心 ×2 → 屬性一致 ×1.5 → 相剋 → 亂數 85–100%</td></tr>
+    <tr><th>物理／特殊</th><td>依屬性決定：一般、格鬥、飛行、毒、地面、岩石、蟲、幽靈、鋼＝物理，其他＝特殊</td></tr>
+    <tr><th>即時制換算</th><td>1 回合＝1.5 秒；速度影響移速與冷卻；先制技幾乎沒有前搖；命中率影響判定大小；PP 照原作次數</td></tr>
+    <tr><th>跳躍</th><td>可跳過震波、躲過低空射擊、站上障礙物；空中使用震地類技能會變成下砸</td></tr>
+  </table>
+  <h3>場地</h3>
+  <p>🌌 星光｜🌳 草原（大樹）｜🌋 火山（岩漿傷害、可能灼傷）｜❄️ 冰原（很滑）｜☁️ 天空神殿（沒有牆，掉下去扣 1/4 HP）｜🏜️ 沙漠遺跡（高低差多）</p>
+  <div class="right"><button class="primary" id="helpClose">關閉</button></div>
+</div></section>
+
+<div id="rotate"><div style="font-size:44px">📱↻</div>請把手機橫放來玩</div>
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/maps.js"></script>
+<script src="js/mods.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/models.js"></script>
+<script src="js/render.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/input.js"></script>
+<script src="js/net.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

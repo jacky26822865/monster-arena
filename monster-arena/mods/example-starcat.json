@@ -1,0 +1,20 @@
+{
+  "name": "範例模組：星光貓",
+  "author": "monster-arena",
+  "moves": {
+    "starbeam": { "name": "星光束", "type": "PSYCHIC", "power": 75, "acc": 100, "pp": 15, "shape": "proj", "spd": 620, "r": 12, "range": 560, "eff": { "statDown": { "s": "spd", "ch": 20 } } }
+  },
+  "species": [
+    {
+      "id": "starcat",
+      "name": "星光貓",
+      "types": ["PSYCHIC", "FLYING"],
+      "base": { "hp": 72, "atk": 70, "def": 68, "spa": 108, "spd": 92, "spe": 110 },
+      "ability": "同步",
+      "nature": "膽小",
+      "evs": { "hp": 4, "spa": 252, "spe": 252 },
+      "moves": ["starbeam", "wingdash", "calmmind", "roost"],
+      "look": { "body": "round", "parts": ["bigEars", "gem", "smallWings", "fluffyTail", "creamBelly"], "legs": "two", "arms": false, "acc": "#9fd8ff", "color": "#c9b6ff" }
+    }
+  ]
+}

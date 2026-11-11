@@ -1,0 +1,4 @@
+{
+  "說明": "把模組 JSON 檔名列在 mods 陣列裡，遊戲啟動時會自動載入（需要用 GitHub Pages 或本機伺服器開啟）",
+  "mods": ["example-starcat.json"]
+}
