@@ -136,7 +136,7 @@ function onGo() {
 // ---------- 連線回呼 ----------
 function onNetStatus(t) { $('netStatus').textContent = t; }
 function onLobbyUpdate() { if (NET.role === 'client' && NET.map) SEL.map = NET.map; if (!$('select').classList.contains('hidden')) { refreshTeam(); updateGoBtn(); } }
-function onNetStart(m) { NET.ready = NET.oppReady = false; launch({ teams: m.teams, map: m.map, names: m.names, hpMult: clamp(+m.hpMult || 2, 1, 5), net: 'client', me: 1, ai: [false, false] }); }
+function onNetStart(m) { NET.ready = NET.oppReady = false; launch({ teams: m.teams, map: m.map, names: m.names, hpMult: clamp(+m.hpMult || 3, 1, 5), net: 'client', me: 1, ai: [false, false] }); }
 function onNetLobby() { if (G && G.net !== 'local') { G = null; } openSelect('online'); }
 function onNetLost() { toast('對手離線了'); if (G && G.net !== 'local' && !G.over) { G.over = true; G.winner = G.me; setTimeout(onBattleEnd, 800); } updateGoBtn(); }
 function onBattleEnd() {

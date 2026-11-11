@@ -29,7 +29,7 @@ function hitStop(v) { G.hs = Math.max(G.hs || 0, v); }
 
 // ---------- 建立 ----------
 // 對戰 HP 倍率：第三代的傷害數字照原作計算，但即時制沒有「回合」的停頓，
-// HP 照原作的話幾秒就分出勝負，所以對戰中的 HP 乘上倍率（預設 ×2）來拉長節奏。
+// HP 照原作的話幾秒就分出勝負，所以對戰中的 HP 乘上倍率（預設 ×3）來拉長節奏。
 // 異常狀態、岩漿等「依最大 HP 比例」的傷害改用原作 HP（baseHp）計算，速度跟著一起放慢。
 function makeMon(sp, nature, side, ti, photo, mult) {
   const stats = calcStats(sp, nature); const maxhp = Math.round(stats.hp * (mult || 1));
@@ -52,7 +52,7 @@ function startBattle(o) {
   setMap(o.map || 'star');
   G = { t: 0, sides: [], projs: [], fx: [], cfx: [], zones: [], texts: [], parts: [], log: [], flashes: [], ev: [], hs: 0, shakeReq: 0, weather: null,
     over: false, paused: false, userPause: false, diff: o.diff || 'normal', stats: { dealt: 0, taken: 0 }, net: o.net || 'local', me: o.me || 0,
-    names: o.names || ['你', '電腦'], nid: 1, winner: -1, opts: o, hpMult: o.hpMult || 2 };
+    names: o.names || ['你', '電腦'], nid: 1, winner: -1, opts: o, hpMult: o.hpMult || 3 };
   G.sides = [0, 1].map(i => ({ i, isAI: !!(o.ai && o.ai[i]), team: o.teams[i].map((p, ti) => makeMon(speciesById(p.id), p.nature, i, ti, p.photo, G.hpMult)), idx: 0, switchCd: 0, pend: null,
     ai: { thinkT: 1.2, strafe: 1, strafeT: 0, dq: null }, ctl: { inX: 0, inY: 0, aim: { x: i ? 0 : W, y: 375 } } }));
   for (const s of G.sides) { const p = spawnPos(s.i); const m = s.team[0]; m.x = p.x; m.y = p.y; m.face = s.i === 0 ? 0 : Math.PI; }
@@ -188,6 +188,8 @@ function hit(att, def, mv) {
   if (eff0 === 0) { say(def, '沒有效果…', '#aaa'); log(`對 ${def.name} 沒有效果…`); return; }
   if (!accRoll(att, def, mv)) { say(def, '閃開了！', '#ddd'); log(`${def.name} 閃開了攻擊！`); return; }
   const r = calcDamage(att, def, mv, false);
+  // 單次傷害上限：避免 4 倍弱點、會心一擊一下就被秒掉（快節奏模式不套用）
+  if (G.hpMult > 1) { const cap = Math.ceil(def.maxhp * .4); if (r.dmg > cap) { r.dmg = cap; r.capped = true; } }
   const col = r.eff > 1 ? '#ffdf5a' : r.eff < 1 ? '#a8b4cc' : '#ffffff';
   say(def, '-' + r.dmg, col, r.eff > 1 || r.crit ? 22 : 17);
   if (r.crit) say(def, '會心一擊！', '#ff7a5a');
