@@ -1,0 +1,81 @@
+{
+  "name": "絨絨鼠",
+  "author": "jacky26822865",
+  "moves": {
+    "acornshot": {
+      "name": "橡實彈",
+      "type": "GRASS",
+      "power": 80,
+      "acc": 100,
+      "pp": 15,
+      "shape": "proj",
+      "spd": 620,
+      "r": 12,
+      "range": 540,
+      "eff": {
+        "flinch": 10
+      }
+    },
+    "dustbath": {
+      "name": "沙浴翻滾",
+      "type": "NORMAL",
+      "power": 0,
+      "acc": 0,
+      "pp": 15,
+      "shape": "self",
+      "buff": {
+        "eva": 1,
+        "spe": 1
+      }
+    }
+  },
+  "species": [
+    {
+      "id": "chinchi",
+      "name": "絨絨鼠",
+      "types": [
+        "NORMAL",
+        "GRASS"
+      ],
+      "base": {
+        "hp": 85,
+        "atk": 75,
+        "def": 70,
+        "spa": 95,
+        "spd": 90,
+        "spe": 105
+      },
+      "ability": "森心",
+      "nature": "膽小",
+      "evs": {
+        "hp": 4,
+        "spa": 252,
+        "spe": 252
+      },
+      "moves": [
+        "acornshot",
+        "quick",
+        "cotton",
+        "dustbath"
+      ],
+      "look": {
+        "body": "round",
+        "color": "#cdd0d9",
+        "acc": "#f4b9c2",
+        "eye": "dot",
+        "legs": "two",
+        "arms": true,
+        "parts": [
+          "bigRoundEars",
+          "stripes",
+          "pinkNose",
+          "whiskers",
+          "acorn",
+          "bushyTail",
+          "creamBelly",
+          "pinkPaws"
+        ]
+      }
+    }
+  ]
+}

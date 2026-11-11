@@ -169,7 +169,7 @@ function openCreator() {
 }
 function crLoad(sp) {
   CRE.editing = sp.src === 'custom' ? sp.id : null; CRE.id = sp.src === 'custom' ? sp.id : 'c' + Date.now().toString(36);
-  $('cName').value = sp.name; $('cT1').value = sp.types[0]; $('cT2').value = sp.types[1] || ''; $('cBody').value = sp.look.body || 'round'; $('cLegs').value = sp.look.legs || 'two'; $('cArms').value = sp.look.arms ? '1' : '0';
+  $('cName').value = sp.name; $('cT1').value = sp.types[0]; $('cT2').value = sp.types[1] || ''; $('cBody').value = sp.look.body || 'round'; $('cLegs').value = sp.look.legs || 'two'; $('cArms').value = sp.look.arms ? '1' : '0'; $('cEye').value = sp.look.eye || 'normal';
   $('cColorAuto').checked = !sp.look.color; $('cColor').value = sp.look.color || TYPES[sp.types[0]].c; $('cAcc').value = sp.look.acc || '#ffffff';
   $('cParts').querySelectorAll('label').forEach(l => { const on = (sp.look.parts || []).includes(l.dataset.p); l.querySelector('input').checked = on; l.classList.toggle('on', on); });
   STAT_KEYS.forEach(k => { $('cStats').querySelector(`[data-s=${k}]`).value = sp.base[k]; });
@@ -181,7 +181,7 @@ function crRead() {
   const types = [$('cT1').value]; if ($('cT2').value && $('cT2').value !== types[0]) types.push($('cT2').value);
   const base = {}; STAT_KEYS.forEach(k => base[k] = +$('cStats').querySelector(`[data-s=${k}]`).value);
   const parts = [...$('cParts').querySelectorAll('input:checked')].map(i => i.value);
-  const look = { body: $('cBody').value, parts, legs: $('cLegs').value, arms: $('cArms').value === '1', acc: $('cAcc').value }; if (!$('cColorAuto').checked) look.color = $('cColor').value;
+  const look = { body: $('cBody').value, parts, legs: $('cLegs').value, arms: $('cArms').value === '1', eye: $('cEye').value, acc: $('cAcc').value }; if (!$('cColorAuto').checked) look.color = $('cColor').value;
   return { id: CRE.id, name: $('cName').value.trim() || '無名', types, base, ability: $('cAbility').value, nature: $('cNature').value, evs: Object.assign({}, EV_PRESET[$('cEv').value]), moves: [0, 1, 2, 3].map(i => $('cMoves').querySelector(`[data-m="${i}"]`).value), look, src: 'custom' };
 }
 function crPreview() {

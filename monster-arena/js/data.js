@@ -163,7 +163,8 @@ const PARTS = {
   crest:'羽冠', antenna:'觸角', leaf:'頭頂葉', gem:'額頭寶石', cap:'蘑菇傘', wool:'羊毛', flameHead:'頭頂燈火',
   finDorsal:'背鰭', tailFin:'尾鰭', sideFins:'側鰭', wings:'翅膀', batWings:'蝙蝠翼', smallWings:'小翅膀', tailFeathers:'尾羽',
   flameTail:'火焰尾', longTail:'長尾巴', fluffyTail:'蓬鬆尾', spikes:'背刺', crystals:'冰晶', shellSpikes:'殼刺', blades:'刀臂',
-  beak:'鳥嘴', snout:'口鼻', jaw:'下顎', fangs:'尖牙', belly:'肚子（第二屬性色）', creamBelly:'奶油色肚子', handOrbs:'浮游手', gloves:'拳套', lavaCracks:'熔岩紋'
+  beak:'鳥嘴', snout:'口鼻', jaw:'下顎', fangs:'尖牙', belly:'肚子（第二屬性色）', creamBelly:'奶油色肚子', handOrbs:'浮游手', gloves:'拳套', lavaCracks:'熔岩紋',
+  bigRoundEars:'大圓耳', stripes:'額頭條紋', pinkNose:'粉紅鼻子', whiskers:'鬍鬚', acorn:'抱著橡實', bushyTail:'蓬鬆大尾巴', pinkPaws:'粉紅腳掌'
 };
 const BODIES = {round:'圓滾滾', tall:'高個子', blob:'軟糊糊', wisp:'幽靈（漂浮）', shell:'甲殼'};
 

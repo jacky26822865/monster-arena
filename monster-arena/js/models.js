@@ -77,6 +77,12 @@ function buildModel(m) {
   if (parts.has('fangs')) for (const s of [-1, 1]) deco.push(cone(r * .06, r * .22, mk('#ffffff'), P(s * .16, -.12, .95), Math.PI));
   if (parts.has('flameTail')) { const tail = new THREE.Group(); tail.position.set(...P(0, -.3, -.85)); tail.add(limb3([0, 0, 0], [0, r * .5, -r * .7], r * .08, bodyM)); tail.add(mesh3(new THREE.SphereGeometry(r * .22, 10, 8), mk('#ff9a3c', { emissive: new THREE.Color('#ff6a00'), emissiveIntensity: .8 }), 0, r * .55, -r * .78)); add(tail); u.tail = tail; }
   if (parts.has('longTail')) { const tail = new THREE.Group(); tail.position.set(...P(0, -.4, -.8)); for (let i = 0; i < 6; i++) tail.add(mesh3(new THREE.SphereGeometry(r * (.32 - i * .03), 12, 10), i > 3 ? accM : bodyM, 0, r * (i * i * .05 + i * .1), -r * i * .3)); add(tail); u.tail = tail; }
+  if (parts.has('bigRoundEars')) { addTop(cy + r * sy * 1.75); for (const s of [-1, 1]) { const e = ball(r * .55, bodyM, P(s * .6, .98, -.08), [1, 1.18, .32]); e.rotation.z = -s * .38; const i = ball(r * .4, accM, P(s * .61, .97, .07), [1, 1.15, .28]); i.rotation.z = -s * .38; } }
+  if (parts.has('stripes')) { const sm = mk(shade(c1, -.18)); for (let i = -1; i <= 1; i++) { const st = ball(r * .3, sm, P(i * .2, .8, .55), [.16, .05, .7]); st.rotation.x = -.95; st.rotation.y = i * .25; } }
+  if (parts.has('pinkNose')) deco.push(ball(r * .09, mk('#f2a9b5'), P(0, .02, 1.0), [1.3, .9, 1]));
+  if (parts.has('whiskers')) { const wm = new THREE.MeshBasicMaterial({ color: '#4a4550' }); for (const s of [-1, 1]) for (const k of [-1, 0, 1]) { const b = P(s * .26, -.02, .93); const w = limb3(b, [b[0] + s * r * .85, b[1] + k * r * .16, b[2] - r * .05], r * .012, wm); w.castShadow = false; deco.push(add(w)); } }
+  if (parts.has('acorn')) { const g = new THREE.Group(); g.position.set(...P(0, -.32, 1.02)); g.add(mesh3(new THREE.SphereGeometry(r * .24, 14, 10), mk('#d9a35c', { roughness: .4 }), 0, -r * .06, 0)); const cap = mesh3(new THREE.SphereGeometry(r * .26, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), mk('#8a5a32'), 0, r * .02, 0); cap.scale.set(1, .6, 1); g.add(cap); g.add(mesh3(new THREE.CylinderGeometry(r * .03, r * .04, r * .12, 6), mk('#6a4426'), 0, r * .2, 0)); g.children[0].scale.set(1, 1.15, 1); add(g); u.holding = true; }
+  if (parts.has('bushyTail')) { const tail = new THREE.Group(); tail.position.set(...P(0, -.45, -.8)); const tm = mk(shade(c1, .08)); const t1 = mesh3(new THREE.SphereGeometry(r * .62, 16, 12), tm, 0, r * .5, -r * .45); t1.scale.set(.8, 1.35, .8); t1.rotation.x = -.45; tail.add(t1); const t2 = mesh3(new THREE.SphereGeometry(r * .5, 14, 10), tm, 0, r * 1.25, -r * .62); t2.scale.set(.85, 1.1, .85); tail.add(t2); add(tail); u.tail = tail; addTop(cy + r * .9); }
   if (parts.has('fluffyTail')) { const tail = new THREE.Group(); tail.position.set(...P(0, -.35, -.85)); const t1 = mesh3(new THREE.SphereGeometry(r * .55, 14, 10), bodyM, 0, r * .45, -r * .45); t1.scale.set(.8, 1.25, .8); t1.rotation.x = -.6; tail.add(t1); tail.add(mesh3(new THREE.SphereGeometry(r * .32, 12, 8), accM, 0, r * 1.05, -r * .85)); add(tail); u.tail = tail; }
   if (parts.has('spikes')) for (let i = 0; i < 4; i++) { const a = .5 + i * .32; cone(r * .14, r * .45, accM, P(0, Math.cos(a), -Math.sin(a)), -a, 0, 5); }
   if (parts.has('crystals')) { const ic = mk(L.acc, { transparent: true, opacity: .88, emissive: new THREE.Color('#7fe7ff'), emissiveIntensity: .25, flatShading: true }); for (const [x, h, y, z] of [[-.4, .7, .55, -.5], [0, .95, .6, -.6], [.4, .7, .55, -.5], [0, .6, .2, -.95]]) cone(r * .17, r * h, ic, P(x, y, z), -.6, 0, 5); }
@@ -84,7 +90,8 @@ function buildModel(m) {
   if (parts.has('lavaCracks')) { const lm = new THREE.MeshBasicMaterial({ color: '#ff7a1a' }); for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(r * 1.005, r * .035, 4, 40), lm); t.position.set(0, cy, 0); t.scale.set(sx, sy, sz); t.rotation.set(Math.random() * 3, Math.random() * 3, 0); add(t); } }
   // 眼睛
   const white = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: .3 }), black = new THREE.MeshStandardMaterial({ color: '#0f121a', roughness: .2 });
-  for (const s of [-1, 1]) { const e = mesh3(new THREE.SphereGeometry(r * .2 * eye.s, 14, 12), white, s * eye.x, eye.p[1], eye.p[2]); e.scale.set(1, 1.15, .7); add(e); const pu = mesh3(new THREE.SphereGeometry(r * .1 * eye.s, 10, 8), black, s * eye.x, eye.p[1] + r * .02, eye.p[2] + r * .15 * eye.s); add(pu); eyesArr.push(e, pu); }
+  if (L.eye === 'dot') for (const s of [-1, 1]) { const e = mesh3(new THREE.SphereGeometry(r * .17 * eye.s, 16, 12), black, s * eye.x, eye.p[1], eye.p[2]); e.scale.set(1, 1.18, .6); add(e); const hl = mesh3(new THREE.SphereGeometry(r * .055 * eye.s, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffffff' }), s * eye.x + r * .05, eye.p[1] + r * .07, eye.p[2] + r * .09); add(hl); eyesArr.push(e, hl); }
+  else for (const s of [-1, 1]) { const e = mesh3(new THREE.SphereGeometry(r * .2 * eye.s, 14, 12), white, s * eye.x, eye.p[1], eye.p[2]); e.scale.set(1, 1.15, .7); add(e); const pu = mesh3(new THREE.SphereGeometry(r * .1 * eye.s, 10, 8), black, s * eye.x, eye.p[1] + r * .02, eye.p[2] + r * .15 * eye.s); add(pu); eyesArr.push(e, pu); }
   // 自訂照片貼臉
   const ph = photoTex(m.photo);
   if (ph) {
@@ -95,7 +102,7 @@ function buildModel(m) {
   // 腿與手
   if (!float) {
     const lift = L.body === 'shell' ? r * .28 : r * .34; const inner = new THREE.Group(); while (body.children.length) inner.add(body.children[0]); inner.position.y = lift; body.add(inner); u.top += lift;
-    const hipY = lift + r * .3, legM = darkM;
+    const hipY = lift + r * .3, legM = parts.has('pinkPaws') ? mk('#f2b8c0') : darkM;
     const mkLeg = (x, z, rad, p) => { const g = new THREE.Group(); g.position.set(x, hipY, z); g.add(limb3([0, 0, 0], [0, -hipY * .82, 0], rad, legM)); const f = mesh3(new THREE.SphereGeometry(rad * 1.35, 10, 8), legM, 0, -hipY + rad * .75, rad * .6); f.scale.set(1, .65, 1.45); g.add(f); body.add(g); u.legs.push({ g, p }); };
     if (L.legs === 'four') { const w = r * .72 * sx; mkLeg(-w, r * .55, r * .2, 0); mkLeg(w, -r * .55, r * .2, 0); mkLeg(w, r * .55, r * .2, Math.PI); mkLeg(-w, -r * .55, r * .2, Math.PI); }
     else { mkLeg(r * .42 * sx, r * .05, r * .15, 0); mkLeg(-r * .42 * sx, r * .05, r * .15, Math.PI); }
@@ -104,8 +111,8 @@ function buildModel(m) {
       const g = new THREE.Group(); const sp0 = P(s * .88, -.05, .12); g.position.set(sp0[0], sp0[1] + lift, sp0[2]);
       g.add(limb3([0, 0, 0], [s * r * .18, -r * .42, r * .05], r * .12, bodyM));
       if (blades) { const bl = mesh3(new THREE.ConeGeometry(r * .18, r * 1.1, 4), mk(L.acc, { metalness: .7, roughness: .25 }), s * r * .2, -r * .45, r * .45); bl.rotation.x = Math.PI / 2 + .3; bl.scale.set(.35, 1, 1); g.add(bl); }
-      else g.add(mesh3(new THREE.SphereGeometry(r * (gloves ? .3 : .17), 12, 10), gloves ? mk(L.acc, { roughness: .35 }) : darkM, s * r * .2, -r * .48, r * .07));
-      body.add(g); u.arms.push({ g, p: s > 0 ? Math.PI : 0 });
+      else g.add(mesh3(new THREE.SphereGeometry(r * (gloves ? .3 : .17), 12, 10), gloves ? mk(L.acc, { roughness: .35 }) : legM, s * r * .2, -r * .48, r * .07));
+      body.add(g); u.arms.push({ g, p: s > 0 ? Math.PI : 0, hold: !!u.holding });
     }
   }
   const ice = new THREE.Mesh(new THREE.IcosahedronGeometry(r * 1.5, 0), new THREE.MeshStandardMaterial({ color: '#c8f6ff', transparent: true, opacity: .45, roughness: .1, metalness: .2, flatShading: true, depthWrite: false })); ice.position.y = r; ice.visible = false; body.add(ice); u.ice = ice;
@@ -160,7 +167,7 @@ function poseModel(m, md, dt, T) {
   for (const L2 of u.legs) { const s2 = Math.sin(u.ph + L2.p);
     if (m.air || m.dodge) { L2.g.rotation.x = -.65; L2.g.rotation.z = 0; } else if (m.dash) { L2.g.rotation.x = .95; L2.g.rotation.z = 0; }
     else { L2.g.rotation.x = -s2 * .8 * amt * fwd; L2.g.rotation.z = s2 * .5 * amt * side; } }
-  for (const A of u.arms) { const s2 = Math.sin(u.ph + A.p); A.g.rotation.x = m.cast ? -1.4 : m.air ? -1.1 : m.dash ? 1.0 : -s2 * .95 * amt * fwd + Math.sin(T * 3) * .06; A.g.rotation.z = m.air ? (A.p ? -.5 : .5) : 0; }
+  for (const A of u.arms) { const s2 = Math.sin(u.ph + A.p); if (A.hold && !m.cast && !m.air && !m.dash) { A.g.rotation.x = -.95 + Math.sin(T * 3) * .05; A.g.rotation.z = (A.p ? -1 : 1) * .5; continue; } A.g.rotation.x = m.cast ? -1.4 : m.air ? -1.1 : m.dash ? 1.0 : -s2 * .95 * amt * fwd + Math.sin(T * 3) * .06; A.g.rotation.z = m.air ? (A.p ? -.5 : .5) : 0; }
   u.wings.forEach((w, i) => w.rotation.z = (i % 2 ? -1 : 1) * (.15 + Math.sin(T * (m.air ? 22 : moving ? 16 : 9)) * .5));
   if (u.flame) u.flame.scale.set(.75, 1.35 + Math.sin(T * 13) * .2, .75);
   if (u.tail) u.tail.rotation.y = Math.sin(T * (moving ? 12 : 5)) * .35;

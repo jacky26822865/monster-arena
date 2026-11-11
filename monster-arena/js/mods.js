@@ -17,7 +17,7 @@ function normSpecies(s, src) {
   const moves = (Array.isArray(s.moves) ? s.moves : []).map(String).filter(m => MOVES[m] && m !== 'struggle' && !MOVES[m].basic).slice(0, 4);
   const fill = ['quick', 'bodyslam', 'recover', 'dteam']; for (const f of fill) if (moves.length < 4 && !moves.includes(f)) moves.push(f);
   const look = Object.assign({ body: 'round', parts: [], legs: 'two', arms: false, acc: '#ffffff' }, s.look || {});
-  look.body = BODIES[look.body] ? look.body : 'round'; look.parts = (look.parts || []).filter(p => PARTS[p]); look.legs = ['two', 'four', 'none'].includes(look.legs) ? look.legs : 'two'; look.arms = !!look.arms;
+  look.body = BODIES[look.body] ? look.body : 'round'; look.parts = (look.parts || []).filter(p => PARTS[p]); look.legs = ['two', 'four', 'none'].includes(look.legs) ? look.legs : 'two'; look.arms = !!look.arms; look.eye = look.eye === 'dot' ? 'dot' : 'normal';
   return { id, name: String(s.name || id).slice(0, 12), types, base, ability: ABIL[s.ability] !== undefined ? s.ability : '無', nature: NATURES.some(n => n[0] === s.nature) ? s.nature : '認真', evs, moves, look,
     model: typeof s.model === 'string' ? s.model : undefined, modelYaw: +s.modelYaw || 0, scale: clamp(+s.scale || 1, .5, 2), src: src || 'mod', author: s.author ? String(s.author).slice(0, 30) : undefined };
 }
