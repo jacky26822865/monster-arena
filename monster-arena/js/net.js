@@ -52,13 +52,13 @@ function localConnect(code) {
     bc.onmessage = ev => {
       const m = ev.data; if (m.to && m.to !== me) return;
       if (m.k === 'who' && NET.role === 'host' && !conn.peerId) { conn.peerId = m.from; bc.postMessage({ k: 'here', from: me, to: m.from }); NET.conn = conn; onConnOpen(); }
-      else if (m.k === 'here' && !decided) { decided = true; NET.role = 'client'; conn.peerId = m.from; NET.conn = conn; onConnOpen(); res('client'); }
+      else if (m.k === 'here' && (!decided || (NET.role === 'host' && !NET.conn))) { const late = decided; decided = true; NET.role = 'client'; conn.peerId = m.from; NET.conn = conn; onConnOpen(); if (late && typeof onLobbyUpdate === 'function') { const b = document.getElementById('modeBadge'); if (b) b.textContent = `連線對戰・房號 ${NET.code}・你是挑戰者`; onLobbyUpdate(); } res('client'); }
       else if (m.k === 'bye' && m.from === conn.peerId) { NET.lost = true; netStatus('對手離線了'); if (typeof onNetLost === 'function') onNetLost(); }
       else if (m.d && m.from === conn.peerId) onNetMsg(m.d);
     };
     addEventListener('beforeunload', () => bc.postMessage({ k: 'bye', from: me }));
     bc.postMessage({ k: 'who', from: me });
-    setTimeout(() => { if (!decided) { decided = true; NET.role = 'host'; netStatus('房間已建立（本機測試模式），等待另一個分頁加入…'); res('host'); } }, 500);
+    setTimeout(() => { if (!decided) { decided = true; NET.role = 'host'; netStatus('房間已建立（本機測試模式），等待另一個分頁加入…'); res('host'); } }, 1200);
   });
 }
 function onConnOpen() {
