@@ -12,6 +12,8 @@
   const custom = SPECIES.length - BUILTIN_SPECIES.size;
   $('modInfo').textContent = custom ? `・已載入 ${custom} 隻自訂／模組怪獸${n ? `（mods 資料夾 ${n} 隻）` : ''}` : '';
   if (MOD_LOG.length) console.warn(MOD_LOG.join('\n'));
+  // 模組是非同步載入的：如果玩家已經在選角畫面，重新整理名單
+  if (n && !$('select').classList.contains('hidden')) { buildFilters(); buildRoster(); }
 })();
 let lastTs = 0;
 function loop(ts) {
