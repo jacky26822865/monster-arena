@@ -92,6 +92,7 @@
     <div class="team" id="teamSlots"></div>
     <div class="opts">
       <button class="mapbtn" id="mapBtn"></button>
+      <label title="對戰中 HP 的倍率。傷害公式照第三代不變，倍率越高打得越久">對戰長度 <select id="lenSel"><option value="1">快節奏（原作 HP，約 30 秒一場）</option><option value="2" selected>標準（HP ×2，約 1 分鐘）</option><option value="3">持久（HP ×3，約 2～3 分鐘）</option><option value="5">超長（HP ×5）</option></select></label>
       <label class="solo-only">難度 <select id="diffSel"><option value="easy">簡單</option><option value="normal" selected>普通</option><option value="hard">困難</option></select></label>
       <label class="scheme-opt">操作 <select id="schemeSel"><option value="lol">LoL 式（右鍵移動＋QWER）</option><option value="wasd">WASD＋滑鼠</option></select></label>
       <label class="scheme-opt">施放 <select id="castSel"><option value="release">按住看範圍、放開施放</option><option value="quick">快速施放（按下就放）</option><option value="click">按鍵後左鍵確認（LoL 預設）</option></select></label>
@@ -186,6 +187,7 @@
     <tr><th>能力值</th><td><code>HP = ⌊(2B+IV+⌊EV/4⌋)×L/100⌋+L+10</code>　其他：<code>⌊(⌊(2B+IV+⌊EV/4⌋)×L/100⌋+5)×性格⌋</code>（Lv.50、IV 31）</td></tr>
     <tr><th>傷害</th><td><code>⌊⌊⌊2L/5+2⌋×威力×攻/防⌋/50⌋</code> → 灼傷物理減半 → 天氣 → +2 → 會心 ×2 → 屬性一致 ×1.5 → 相剋 → 亂數 85–100%</td></tr>
     <tr><th>物理／特殊</th><td>依屬性決定：一般、格鬥、飛行、毒、地面、岩石、蟲、幽靈、鋼＝物理，其他＝特殊</td></tr>
+    <tr><th>對戰 HP 倍率</th><td>傷害公式完全照第三代，但即時制沒有回合停頓，所以對戰中 HP 預設 ×2（可在選角畫面調整 ×1～×5）。灼傷、中毒、寄生種、岩漿等按比例的傷害仍以原作 HP 計算</td></tr>
     <tr><th>即時制換算</th><td>1 回合＝1.5 秒；速度影響移動速度（90＋速度×0.9）、普攻間隔與技能冷卻；先制技幾乎沒有前搖；命中率影響判定大小；PP 照原作次數</td></tr>
     <tr><th>跳躍</th><td>可跳過震波、躲過低空射擊、站上障礙物；空中使用震地類技能會變成下砸</td></tr>
   </table>

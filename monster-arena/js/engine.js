@@ -28,9 +28,12 @@ function shake(v) { G.shakeReq = Math.max(G.shakeReq || 0, v); emit(['k', v]); }
 function hitStop(v) { G.hs = Math.max(G.hs || 0, v); }
 
 // ---------- 建立 ----------
-function makeMon(sp, nature, side, ti, photo) {
-  const stats = calcStats(sp, nature);
-  const m = { sp, name: sp.name, types: sp.types, ability: sp.ability, nature, stats, maxhp: stats.hp, hp: stats.hp, side, ti, photo: photo || null,
+// 對戰 HP 倍率：第三代的傷害數字照原作計算，但即時制沒有「回合」的停頓，
+// HP 照原作的話幾秒就分出勝負，所以對戰中的 HP 乘上倍率（預設 ×2）來拉長節奏。
+// 異常狀態、岩漿等「依最大 HP 比例」的傷害改用原作 HP（baseHp）計算，速度跟著一起放慢。
+function makeMon(sp, nature, side, ti, photo, mult) {
+  const stats = calcStats(sp, nature); const maxhp = Math.round(stats.hp * (mult || 1));
+  const m = { sp, name: sp.name, types: sp.types, ability: sp.ability, nature, stats, baseHp: stats.hp, maxhp, hp: maxhp, side, ti, photo: photo || null,
     moves: sp.moves.slice(), pp: {}, cd: {}, cdMax: {}, fainted: false, status: null, slpT: 0, r: 26, x: 0, y: 0, face: 0, hitFlash: 0, lavaT: 0 };
   for (const id of m.moves) { m.pp[id] = MOVES[id].pp; m.cd[id] = 0; m.cdMax[id] = 1; }
   m.basicId = 'b_' + m.types[0] + (PHYSICAL.has(m.types[0]) ? '_m' : '_r');
@@ -49,8 +52,8 @@ function startBattle(o) {
   setMap(o.map || 'star');
   G = { t: 0, sides: [], projs: [], fx: [], cfx: [], zones: [], texts: [], parts: [], log: [], flashes: [], ev: [], hs: 0, shakeReq: 0, weather: null,
     over: false, paused: false, userPause: false, diff: o.diff || 'normal', stats: { dealt: 0, taken: 0 }, net: o.net || 'local', me: o.me || 0,
-    names: o.names || ['你', '電腦'], nid: 1, winner: -1, opts: o };
-  G.sides = [0, 1].map(i => ({ i, isAI: !!(o.ai && o.ai[i]), team: o.teams[i].map((p, ti) => makeMon(speciesById(p.id), p.nature, i, ti, p.photo)), idx: 0, switchCd: 0, pend: null,
+    names: o.names || ['你', '電腦'], nid: 1, winner: -1, opts: o, hpMult: o.hpMult || 2 };
+  G.sides = [0, 1].map(i => ({ i, isAI: !!(o.ai && o.ai[i]), team: o.teams[i].map((p, ti) => makeMon(speciesById(p.id), p.nature, i, ti, p.photo, G.hpMult)), idx: 0, switchCd: 0, pend: null,
     ai: { thinkT: 1.2, strafe: 1, strafeT: 0, dq: null }, ctl: { inX: 0, inY: 0, aim: { x: i ? 0 : W, y: 375 } } }));
   for (const s of G.sides) { const p = spawnPos(s.i); const m = s.team[0]; m.x = p.x; m.y = p.y; m.face = s.i === 0 ? 0 : Math.PI; }
   if (G.net !== 'client') {
@@ -215,7 +218,7 @@ function hit(att, def, mv) {
       if (def.ability === '孢子' && roll(10)) { say(def, '孢子', '#b05cc8'); inflict(att, ['PSN', 'PAR', 'SLP'][Math.floor(Math.random() * 3)], true, null); }
     }
   }
-  if (mv.contact && def.ability === '粗糙皮膚' && !att.fainted) { const d = Math.max(1, Math.floor(att.maxhp / 16)); say(att, '粗糙皮膚 -' + d, '#e8c070'); applyDamage(att, d); }
+  if (mv.contact && def.ability === '粗糙皮膚' && !att.fainted) { const d = Math.max(1, Math.floor(att.baseHp / 16)); say(att, '粗糙皮膚 -' + d, '#e8c070'); applyDamage(att, d); }
   if (mv.eff && mv.eff.selfUp && !att.fainted && roll(mv.eff.selfUp.ch)) changeStage(att, mv.eff.selfUp.s, 1);
   if (mv.recoil && !att.fainted) { const rc = Math.max(1, Math.floor(r.dmg * mv.recoil)); say(att, '反作用 -' + rc, '#ffa0a0'); log(`${att.name} 受到反作用傷害！`); applyDamage(att, rc); }
 }
@@ -277,9 +280,9 @@ function execMove(m, mv, aim) {
 function endTurn(m) {
   if (m.fainted) return;
   const s = m.status;
-  if (s === 'BRN' || s === 'PSN') { const d = Math.max(1, Math.floor(m.maxhp / 8)); say(m, '-' + d, STATUSN[s][1]); applyDamage(m, d); if (m.fainted) return; }
-  if (s === 'TOX') { const d = Math.max(1, Math.floor(m.maxhp * m.toxicN / 16)); m.toxicN = Math.min(15, m.toxicN + 1); say(m, '-' + d, STATUSN[s][1]); applyDamage(m, d); if (m.fainted) return; }
-  if (m.seeded !== null) { const d = Math.max(1, Math.floor(m.maxhp / 8)); const seeder = activeOf(m.seeded); say(m, '寄生 -' + d, '#78c850'); applyDamage(m, d); if (seeder && !seeder.fainted) heal(seeder, d); if (m.fainted) return; }
+  if (s === 'BRN' || s === 'PSN') { const d = Math.max(1, Math.floor(m.baseHp / 8)); say(m, '-' + d, STATUSN[s][1]); applyDamage(m, d); if (m.fainted) return; }
+  if (s === 'TOX') { const d = Math.max(1, Math.floor(m.baseHp * m.toxicN / 16)); m.toxicN = Math.min(15, m.toxicN + 1); say(m, '-' + d, STATUSN[s][1]); applyDamage(m, d); if (m.fainted) return; }
+  if (m.seeded !== null) { const d = Math.max(1, Math.floor(m.baseHp / 8)); const seeder = activeOf(m.seeded); say(m, '寄生 -' + d, '#78c850'); applyDamage(m, d); if (seeder && !seeder.fainted) heal(seeder, d); if (m.fainted) return; }
   if (s === 'FRZ' && Math.random() < .2) { m.status = null; say(m, '解凍了！', '#bff3ff'); log(`${m.name} 的冰融化了！`); }
   if (m.ability === '疾走') { m.boostN++; if (m.boostN >= 3) { m.boostN = 0; if (m.st.spe < 6) { say(m, '疾走', '#ffd86b'); changeStage(m, 'spe', 1); } } }
 }
@@ -351,7 +354,7 @@ function updateMon(m, dt, side) {
   m.squash *= Math.pow(.0004, dt); if (m.flip > 0) m.flip = Math.max(0, m.flip - dt * 2.6);
   // 岩漿
   if (!m.air && m.z <= 1 && inLava(m.x, m.y) && !m.types.includes('FIRE')) {
-    m.lavaT -= dt; if (m.lavaT <= 0) { m.lavaT = .5; const d = Math.max(1, Math.floor(m.maxhp / 16)); say(m, '岩漿 -' + d, '#ff7a2a'); applyDamage(m, d); if (!m.fainted && roll(15)) inflict(m, 'BRN', true, null); }
+    m.lavaT -= dt; if (m.lavaT <= 0) { m.lavaT = .5; const d = Math.max(1, Math.floor(m.baseHp / 16)); say(m, '岩漿 -' + d, '#ff7a2a'); applyDamage(m, d); if (!m.fainted && roll(15)) inflict(m, 'BRN', true, null); }
   } else m.lavaT = Math.min(m.lavaT, .15);
 }
 function update(dt) {

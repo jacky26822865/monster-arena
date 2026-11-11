@@ -71,7 +71,7 @@ function showDetail() {
   $('dAbility').innerHTML = `特性 <b>${esc(sp.ability)}</b>：${ABIL[sp.ability] || ''}`;
   const nat = natureOf(sp.id); $('dNature').innerHTML = NATURES.map(n => `<option value="${n[0]}" ${n[0] === nat ? 'selected' : ''}>${n[0]}${n[1] ? `（+${STATN[n[1]]} −${STATN[n[2]]}）` : '（無修正）'}</option>`).join('');
   const st = calcStats(sp, nat), nn = NATURES.find(n => n[0] === nat);
-  $('dStats').innerHTML = STAT_KEYS.map(k => `<div class="r"><span class="dim">${STATN[k]}</span><span class="bar"><i style="width:${Math.min(100, sp.base[k] / 1.5)}%;background:${sp.base[k] >= 100 ? '#5cd68a' : sp.base[k] >= 75 ? '#e8c95a' : '#e8885a'}"></i></span><span class="v ${nn[1] === k ? 'up' : nn[2] === k ? 'dn' : ''}">${sp.base[k]} → ${st[k]}</span></div>`).join('') + '<div class="dim small">種族值 → Lv.50 實際值</div>';
+  $('dStats').innerHTML = STAT_KEYS.map(k => `<div class="r"><span class="dim">${STATN[k]}</span><span class="bar"><i style="width:${Math.min(100, sp.base[k] / 1.5)}%;background:${sp.base[k] >= 100 ? '#5cd68a' : sp.base[k] >= 75 ? '#e8c95a' : '#e8885a'}"></i></span><span class="v ${nn[1] === k ? 'up' : nn[2] === k ? 'dn' : ''}">${sp.base[k]} → ${st[k]}</span></div>`).join('') + `<div class="dim small">種族值 → Lv.50 實際值（對戰中 HP ×${$('lenSel').value}＝${Math.round(st.hp * $('lenSel').value)}）</div>`;
   drawRadar(sp);
   const keys = INPUT.scheme === 'lol' ? ['Q', 'W', 'E', 'R'] : ['1', '2', '3', '4'];
   const fake = { stats: st, st: { spe: 0 }, status: null }; const bm = MOVES['b_' + sp.types[0] + (PHYSICAL.has(sp.types[0]) ? '_m' : '_r')];
@@ -96,7 +96,7 @@ function updateGoBtn() {
   $('oppBadge').textContent = opp ? `對手：${opp.name}${NET.oppReady ? '（已準備）' : '（選角中）'}` : '等待對手加入…'; $('oppBadge').classList.toggle('ok', !!(opp && NET.oppReady));
   if (NET.role === 'host') { b.textContent = NET.ready ? (NET.oppReady ? '開始對戰！' : '等對手準備…') : '準備好了'; b.disabled = !full || (NET.ready && !NET.oppReady); }
   else { b.textContent = NET.ready ? '已準備（等房主開始）' : '準備好了'; b.disabled = !full; }
-  $('mapBtn').disabled = NET.role !== 'host';
+  $('mapBtn').disabled = NET.role !== 'host'; $('lenSel').disabled = NET.role !== 'host';
 }
 function teamPayload(net) { return SEL.picks.map(id => ({ id, nature: natureOf(id), photo: photoSel[id] ? (net ? shrinkPhoto(photoSel[id]) : photoSel[id]) : null })); }
 const shrinkCache = {};
@@ -118,7 +118,7 @@ function resolveMap(id) { return id === 'random' ? randomMapId() : id; }
 function startSolo() {
   const pool = SPECIES.map(s => s.id).filter(id => !SEL.picks.includes(id)).sort(() => Math.random() - .5);
   const ep = pool.slice(0, 3).map(id => ({ id, nature: speciesById(id).nature, photo: null }));
-  const o = { teams: [teamPayload(false), ep], map: resolveMap(SEL.map), diff: $('diffSel').value, net: 'local', me: 0, names: [myName || '你', '電腦'], ai: [false, true] };
+  const o = { teams: [teamPayload(false), ep], map: resolveMap(SEL.map), diff: $('diffSel').value, hpMult: +$('lenSel').value, net: 'local', me: 0, names: [myName || '你', '電腦'], ai: [false, true] };
   window.lastSolo = o; launch(o);
 }
 function launch(o) { INPUT.aiming = null; INPUT.moveTo = null; INPUT.pending = null; INPUT.lastDir = { x: o.me ? -1 : 1, y: 0 }; startBattle(o); show(null); $('end').classList.add('hidden'); }
@@ -128,14 +128,15 @@ function onGo() {
   if (NET.role === 'host' && NET.oppReady && NET.oppTeam && NET.oppTeam.length === 3) {
     const map = resolveMap(SEL.map); const teams = [teamPayload(true), NET.oppTeam]; const names = [myName || '房主', NET.opp ? NET.opp.name : '挑戰者'];
     const defs = defsFor(SEL.picks.concat(NET.oppTeam.map(p => p.id)));
-    NET.send({ t: 'start', teams, map, names, defs }); NET.ready = NET.oppReady = false;
-    launch({ teams, map, names, net: 'host', me: 0, ai: [false, false] });
+    const hpMult = +$('lenSel').value;
+    NET.send({ t: 'start', teams, map, names, defs, hpMult }); NET.ready = NET.oppReady = false;
+    launch({ teams, map, names, hpMult, net: 'host', me: 0, ai: [false, false] });
   }
 }
 // ---------- 連線回呼 ----------
 function onNetStatus(t) { $('netStatus').textContent = t; }
 function onLobbyUpdate() { if (NET.role === 'client' && NET.map) SEL.map = NET.map; if (!$('select').classList.contains('hidden')) { refreshTeam(); updateGoBtn(); } }
-function onNetStart(m) { NET.ready = NET.oppReady = false; launch({ teams: m.teams, map: m.map, names: m.names, net: 'client', me: 1, ai: [false, false] }); }
+function onNetStart(m) { NET.ready = NET.oppReady = false; launch({ teams: m.teams, map: m.map, names: m.names, hpMult: clamp(+m.hpMult || 2, 1, 5), net: 'client', me: 1, ai: [false, false] }); }
 function onNetLobby() { if (G && G.net !== 'local') { G = null; } openSelect('online'); }
 function onNetLost() { toast('對手離線了'); if (G && G.net !== 'local' && !G.over) { G.over = true; G.winner = G.me; setTimeout(onBattleEnd, 800); } updateGoBtn(); }
 function onBattleEnd() {
@@ -227,6 +228,8 @@ function initUI() {
   $('schemeSel').onchange = () => { setScheme($('schemeSel').value); showDetail(); $('castSel').parentElement.classList.toggle('hidden', INPUT.scheme !== 'lol'); };
   $('castSel').value = INPUT.castStyle; $('castSel').onchange = () => setCastStyle($('castSel').value);
   $('hq').onchange = () => setHQ($('hq').checked);
+  try { const v = localStorage.getItem('ma_len'); if (v) $('lenSel').value = v; } catch (e) {}
+  $('lenSel').onchange = () => { try { localStorage.setItem('ma_len', $('lenSel').value); } catch (e) {} showDetail(); };
   $('goBtn').onclick = onGo;
   $('helpClose').onclick = () => toggleHelp(false);
   $('againBtn').onclick = () => { $('end').classList.add('hidden'); if (G && G.net === 'local' && window.lastSolo) { const o = window.lastSolo; o.map = resolveMap(SEL.map); launch(o); } else { if (NET.conn) NET.send({ t: 'lobby' }); G = null; openSelect('online'); } };
